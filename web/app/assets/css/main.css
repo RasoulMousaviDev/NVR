@@ -1,0 +1,18 @@
+@import 'primeicons/primeicons.css';
+@import "tailwindcss";
+@import "tailwindcss-primeui";
+@import './fonts.css';
+
+@layer utilities {
+    .ltr {
+        direction: ltr;
+    }
+}
+
+html{
+    @apply text-sm font-['vazir'];
+}
+
+hr{
+    @apply grow text-gray-200;
+}

@@ -1,0 +1,18 @@
+{
+    "cameras": "دوربین‌ها",
+    "scan": "اسکن",
+    "new-camera": "دوربین جدید",
+    "not-found": "موردی یافت نشد",
+    "loading": "درحال بارگذاری ...",
+    "model":"مدل",
+    "serial-number":"شماره سریال",
+    "manufacturer":"تولید کننده",
+    "firmware-version":"ورژن میان‌افزار",
+    "recording-status":"وضعیت ضبط",
+    "connection-status":"وضعیت اتصال",
+    "connected":"متصل",
+    "disconnected":"قطع ارتباط",
+    "ip": "آی‌پی",
+    "live-stream":"پخش زنده",
+    "archive":"آرشیو"
+}
