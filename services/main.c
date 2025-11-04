@@ -1,24 +1,3 @@
-/*
- * onvif_listener.c
- *
- * ONVIF WS-Discovery listener + multi-interface probe sender in C.
- * - Enumerates IPv4 network interfaces (non-loopback, UP) and joins multicast on each.
- * - Binds UDP port 3702 on INADDR_ANY and registers IP_ADD_MEMBERSHIP for every interface.
- * - Periodically sends a Probe to 239.255.255.250:3702 on every interface (sets IP_MULTICAST_IF).
- * - Receives ProbeMatch responses (unicast or multicast) and parses UUID (Address) and XAddrs.
- * - Tracks devices by UUID and logs JSON lines on "seen" and "gone" events.
- *
- * Build:
- *   gcc -O2 -Wall -o onvif_listener onvif_listener.c
- *
- * Run:
- *   sudo ./onvif_listener
- *
- * Notes:
- * - This implementation uses lightweight string-based XML extraction, which works for many
- *   device responses but is not a full XML parser. For production, consider using libxml2.
- * - Requires root or suitable capabilities to join multicast groups on interfaces.
- */
 #define _DEFAULT_SOURCE
 
 #include <stdio.h>
