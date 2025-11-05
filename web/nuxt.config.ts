@@ -6,9 +6,6 @@ export default defineNuxtConfig({
     devtools: { enabled: true },
     ssr: false,
     css: ['./app/assets/css/main.css'],
-    app: {
-        rootAttrs: { dir: "rtl" }
-    },
     modules: ['@primevue/nuxt-module', '@nuxtjs/i18n'],
     primevue: {
         options: {
@@ -32,4 +29,9 @@ export default defineNuxtConfig({
             tailwindcss(),
         ],
     },
+    nitro: {
+        experimental: {
+            websocket: true
+        }
+    }
 })

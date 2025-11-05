@@ -2,13 +2,34 @@
 definePageMeta({ path: '/' })
 
 const { data, pending: fetching, refresh, clear } = useLazyFetch('/api/cameras')
+
+const dialog = useDialog()
+
+const CameraStream = defineAsyncComponent(() => import('~/components/Camera/Stream.vue'))
+
+const handleStream = (data) => {
+    dialog.open(CameraStream, { props: { modal: true, closable: true, header: data.model }, data })
+}
+
+const handleRecord = async (camera) => {
+
+    const { pending } = useFetch(`/api/cameras/${camera.id}`, {
+        method: 'PATCH',
+        body: { record: !!camera.record },
+        onResponse: ({ data }) => {
+            camera.record = data.record;
+        }
+    })
+
+    camera.updating = pending
+}
 </script>
 
 <template>
     <div class="bg-white rounded p-6">
         <DataTable :value="data?.items">
             <template #header>
-                <CameraHeader :fetching @refresh="refresh" />
+                <CameraHeader :fetching @refresh="[$event && clear(), refresh()]" />
             </template>
             <template #empty>
                 <p class="text-center text-sm opacity-60">
@@ -23,7 +44,8 @@ const { data, pending: fetching, refresh, clear } = useLazyFetch('/api/cameras')
             <Column :header="$t('recording-status')">
                 <template #body="{ data }">
                     <div class="flex items-center w-full">
-                        <InputSwitch v-model="data.recording" @change="handleRecord(data.recording)" />
+                        <InputSwitch v-model="data.record" :true-value="1" :false-value="0"
+                            :disabled="data.connect || data.updating" @change="handleRecord(data)" />
                     </div>
                 </template>
             </Column>
@@ -36,8 +58,10 @@ const { data, pending: fetching, refresh, clear } = useLazyFetch('/api/cameras')
             <Column>
                 <template #body="{ data }">
                     <div class="flex justify-end gap-1">
-                        <Button icon="pi pi-folder" text rounded v-tooltip.top="$t('archive')" />
-                        <Button icon="pi pi-play-circle" text rounded v-tooltip.top="$t('live-stream')" />
+                        <Button icon="pi pi-folder" text rounded v-tooltip.top="$t('archive')"
+                            @click="handleArchive(data)" />
+                        <Button icon="pi pi-play-circle" text rounded :disabled="!data.connect"
+                            v-tooltip.top="$t('live-stream')" @click="handleStream(data)" />
                     </div>
                 </template>
             </Column>
