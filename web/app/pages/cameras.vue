@@ -23,26 +23,23 @@ const handleCredentials = (data) => {
 
 const handleRecord = async (camera) => {
 
-    const { status, pending, data, error, execute } = useFetch(`/api/cameras/${camera.id}/record`, {
-        method: 'post',
+    const { pending } = useFetch(`/api/cameras/${camera.id}/record`, {
+        method: 'POST',
         body: { record: +camera.record },
-        immediate: false
+        onResponse({ response }) {
+            if (response.ok)
+                camera.record = response.record;
+        },
+        onResponseError({ response }) {
+            setTimeout(() => {
+                camera.record = 0
+                toast.add({ severity: 'error', summary: 'Error', detail: response._data.message, life: 3000 })
+            }, 500);
+        },
+        key: Date.now().toString()
     })
 
     camera.updating = pending
-
-    await execute()
-
-    if (status.value == 'success') {
-        camera.record = data.value.record;
-
-    } else {
-        setTimeout(() => {
-            toast.add({ severity: 'error', summary: 'Error', detail: error.value.data.message, life: 3000 })
-            camera.record = 0
-        }, 300);
-    }
-
 }
 </script>
 
