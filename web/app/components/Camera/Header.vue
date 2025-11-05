@@ -10,7 +10,7 @@ watch(pending, (v) => !v && status.value == 'success' && emit('refresh', false))
 <template>
     <div class="flex items-center gap-2">
         <span class="text-2xl font-bold">{{ $t('cameras') }}</span>
-        <Button icon="pi pi-refresh" rounded text :loading="fetching" @click="emit('refresh', true)" />
+        <Button icon="pi pi-refresh" rounded text severity="secondary" :loading="fetching" @click="emit('refresh', true)" />
         <hr>
         <Button :label="$t('scan')" icon="pi pi-search" severity="warn" :loading="pending"
             :disabled="fetching | pending" @click="execute()" />

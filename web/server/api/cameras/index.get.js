@@ -1,12 +1,34 @@
 import Database from "better-sqlite3";
 import { join } from "path";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
     const db = new Database(join(process.cwd(), "database/nvr.db"));
+
+    const sql = `
+        CREATE TABLE IF NOT EXISTS cameras (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT NOT NULL UNIQUE,
+            manufacturer TEXT NULL,
+            model TEXT NULL,
+            firmware_version TEXT NULL,
+            serial_number TEXT NULL,
+            hardware_id TEXT NULL,
+            username TEXT NULL,
+            password TEXT NULL,
+            record INTEGER DEFAULT 1,
+            connect INTEGER DEFAULT 1,
+            last_seen INTEGER
+        );`;
+
+    try {
+        db.exec(sql);
+    } catch (error) {
+        console.log(error);
+    }
 
     const cameras = db.prepare(`SELECT * FROM Cameras;`).all();
 
-    db.close()
+    db.close();
 
     return { items: cameras };
 });

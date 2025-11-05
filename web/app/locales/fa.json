@@ -15,5 +15,13 @@
     "ip": "آی‌پی",
     "live-stream":"پخش زنده",
     "archive":"آرشیو",
-    "back": "بازگشت"
+    "dashboard": "داشبپورد",
+    "back": "بازگشت",
+    "files":"فایل‌ها",
+    "settings":"تنظیمات",
+    "row": "ردیف",
+    "credentials": "دسترسی اتصال",
+    "submit": "ثبت",
+    "username": "نام کاربری",
+    "password": "رمزعبور"
 }

@@ -9,6 +9,7 @@ useHead({
 <template>
     <NuxtLayout>
         <NuxtPage />
+        <DynamicDialog />
+        <Toast position="bottom-left"/>
     </NuxtLayout>
-    <DynamicDialog />
 </template>
