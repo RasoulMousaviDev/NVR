@@ -18,12 +18,12 @@ export default defineEventHandler(async (event) => {
         if (record) {
             if (!camera.username || !camera.password) {
                 setResponseStatus(event, 401, );
-                return { message: "Unauthorization." };
+                return { message: "Unauthorized" };
             }
 
             camera.username = decrypt(camera.username);
             camera.password = decrypt(camera.password);
-
+            
             startRecord(camera);
         } else activeRecordings[id]?.kill("SIGINT");
 
