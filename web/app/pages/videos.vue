@@ -1,31 +1,37 @@
 <script setup>
 const dialog = useDialog()
 
-const folders = ref(['cameras'])
+const folders = ref(['nvr'])
+
+const route = useRoute()
+
+if(route.query.camera)
+    folders.value.push(route.query.camera)
 
 const { data, pending, refresh } = await useFetch('/api/files', {
     query: { direction: folders.value },
     watch: [() => folders.value.length]
 })
 
-const FileShow = defineAsyncComponent(() => import('~/components/File/Show.vue'))
+const VideoPlay = defineAsyncComponent(() => import('~/components/Video/Play.vue'))
 
 const handleClick = (item) => {
     if (item.type == 'folder') {
         folders.value.push(item.name)
     } else {
-        dialog.open(FileShow, {
+        dialog.open(VideoPlay, {
             props: { modal: true, closable: true, header: item.name },
             data: { direction: folders.value, file: item }
         })
     }
 }
 
+
 </script>
 
 <template>
     <div class="bg-white rounded p-6 h-full flex flex-col gap-4">
-        <FileHeader v-model="folders" :fetching="pending" @refresh="refresh" />
+        <VideoHeader v-model="folders" :fetching="pending" @refresh="refresh" />
         <div :class="{ 'pointer-events-none': pending }" class="shadow-inner h-full rounded p-6 ltr">
             <ul class="flex flex-wrap gap-x-5 gap-y-8 ">
                 <li v-for="(item, key) in data?.items" :key class="h-max">

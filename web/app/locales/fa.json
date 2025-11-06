@@ -17,11 +17,12 @@
     "archive":"آرشیو",
     "dashboard": "داشبپورد",
     "back": "بازگشت",
-    "files":"فایل‌ها",
+    "videos":"ویدیوها",
     "settings":"تنظیمات",
     "row": "ردیف",
     "credentials": "دسترسی اتصال",
     "submit": "ثبت",
     "username": "نام کاربری",
-    "password": "رمزعبور"
+    "password": "رمزعبور",
+    "sd-card": "کارت حافظه"
 }

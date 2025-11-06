@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-
+navigateTo('/cameras')
 </script>
 
 <style lang="scss" scoped>

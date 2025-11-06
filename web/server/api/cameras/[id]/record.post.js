@@ -17,13 +17,13 @@ export default defineEventHandler(async (event) => {
 
         if (record) {
             if (!camera.username || !camera.password) {
-                setResponseStatus(event, 401, );
+                setResponseStatus(event, 401);
                 return { message: "Unauthorized" };
             }
 
             camera.username = decrypt(camera.username);
             camera.password = decrypt(camera.password);
-            
+
             startRecord(camera);
         } else activeRecordings[id]?.kill("SIGINT");
 
@@ -41,13 +41,12 @@ export default defineEventHandler(async (event) => {
 const activeRecordings = {};
 
 const startRecord = ({ model, username, password, id, ip }) => {
-    const recorder = spawn(join(process.cwd(), "scripts/record"), [
-        `rtsp://${username}:${password}@${ip}:554/stream`,
-        "10",
-        model,
-        "/tmp/nvr",
-    ]);
+    const url = `rtsp://${username}:${password}@${ip}:554/stream`;
+    
+    const script = join(process.cwd(), "scripts/record");
 
+    const recorder = spawn(script, [model, url, 10, "/tmp/nvr"]);
+    
     recorder.stdout.on("data", (data) => {
         console.log(`stdout: ${data}`);
     });

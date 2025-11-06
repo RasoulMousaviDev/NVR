@@ -12,12 +12,12 @@ export default defineEventHandler(async (event) => {
     const filepath = join(baseDir, path);
 
     try {
-        await fs.access(filepath);
+        await fs.access(filepath.replace('.mp4', '.enc'));
     } catch (err) {
         event.node.res.statusCode = 404;
         return { error: "file not found" };
     }
-
+    const name = filepath.split('/').at(-1)
     const res = event.node.res;
     res.setHeader("Content-Type", "video/mp4");
     res.setHeader(

@@ -29,7 +29,7 @@ const handleRecord = async (camera) => {
         onResponse({ response }) {
             if (response.ok)
                 camera.record = response._data.record;
-            
+
         },
         onResponseError({ response }) {
             setTimeout(() => {
@@ -82,12 +82,12 @@ const handleRecord = async (camera) => {
             <Column>
                 <template #body="{ data }">
                     <div class="flex justify-end gap-1">
-                        <Button icon="pi pi-folder" text rounded v-tooltip.top="$t('archive')"
-                            @click="handleArchive(data)" />
-                        <Button icon="pi pi-play-circle" text rounded :disabled="!data.connect"
+                        <Button icon="pi pi-folder" text rounded as="router-link" :to="`/videos?camera=${data.model}`"
+                            v-tooltip.top="$t('archive')" @click="handleArchive(data)" />
+                        <Button icon="pi pi-play-circle" text rounded :disabled="data.connect"
                             v-tooltip.top="$t('live-stream')" @click="handleStream(data)" />
-                        <Button icon="pi pi-lock" text rounded v-tooltip.top="$t('credentials')"
-                            @click="handleCredentials(data)" />
+                        <Button icon="pi pi-lock" text rounded :disabled="!data.connect"
+                            v-tooltip.top="$t('credentials')" @click="handleCredentials(data)" />
                     </div>
                 </template>
             </Column>

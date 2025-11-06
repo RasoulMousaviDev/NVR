@@ -3,7 +3,7 @@ const dialog = inject('dialogRef')
 
 const { file, direction } = dialog.value.data
 
-const url = `/api/files/show/${direction.join('/')}/${file.name}`
+const url = `/api/files/play/${direction.join('/')}/${file.name}`
 </script>
 
 <template>
