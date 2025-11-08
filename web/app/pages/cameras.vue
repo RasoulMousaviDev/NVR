@@ -1,4 +1,6 @@
 <script setup>
+definePageMeta({ middleware: ['auth'] })
+
 const { data, pending: fetching, refresh, clear } = useLazyFetch('/api/cameras')
 
 const items = ref([])
@@ -9,17 +11,44 @@ const dialog = useDialog()
 
 const toast = useToast()
 
+const router = useRouter()
+
+const { t } = useI18n()
+
+const menu = ref();
+const options = ref();
+
 const CameraStream = defineAsyncComponent(() => import('~/components/Camera/Stream.vue'))
-
-const handleStream = (data) => {
-    dialog.open(CameraStream, { props: { modal: true, closable: true, header: data.model }, data })
-}
-
+const CameraSettings = defineAsyncComponent(() => import('~/components/Camera/Settings.vue'))
 const CameraCredentials = defineAsyncComponent(() => import('~/components/Camera/Credentials.vue'))
 
-const handleCredentials = (data) => {
-    dialog.open(CameraCredentials, { props: { modal: true, closable: true, header: data.model }, data })
-}
+const toggle = (data, event) => {
+    const props = { modal: true, closable: true, header: data.model }
+    const disabled = data.connect
+
+    options.value = [
+        {
+            label: t('archive'), icon: 'pi pi-folder',
+            command: () => router.push(`/videos?camera=${data.model}`)
+        },
+        {
+            label: t('live-stream'), icon: 'pi pi-play-circle', disabled,
+            command: () => dialog.open(CameraStream, { props, data })
+        },
+        {
+            label: t('settings'), icon: 'pi pi-cog', disabled,
+            command: () => dialog.open(CameraSettings, { props, data })
+        },
+        {
+            label: t('credentials'), icon: 'pi pi-lock', disabled,
+            command: () => dialog.open(CameraCredentials, { props, data })
+        },
+    ]
+
+    menu.value.toggle(event);
+};
+
+
 
 const handleRecord = async (camera) => {
 
@@ -65,7 +94,7 @@ const handleRecord = async (camera) => {
             <Column field="serial_number" :header="$t('serial-number')"></Column>
             <Column field="manufacturer" :header="$t('manufacturer')"></Column>
             <Column field="firmware_version" :header="$t('firmware-version')"></Column>
-            <Column :header="$t('recording-status')">
+            <Column :header="$t('recording')">
                 <template #body="{ data }">
                     <div class="flex items-center w-full">
                         <InputSwitch v-model="data.record" :true-value="1" :false-value="0"
@@ -79,18 +108,12 @@ const handleRecord = async (camera) => {
                     <Tag v-else severity="warn" :value="$t('disconnected')" />
                 </template>
             </Column>
-            <Column>
+            <Column body-class="text-left pl-0">
                 <template #body="{ data }">
-                    <div class="flex justify-end gap-1">
-                        <Button icon="pi pi-folder" text rounded as="router-link" :to="`/videos?camera=${data.model}`"
-                            v-tooltip.top="$t('archive')" @click="handleArchive(data)" />
-                        <Button icon="pi pi-play-circle" text rounded :disabled="data.connect"
-                            v-tooltip.top="$t('live-stream')" @click="handleStream(data)" />
-                        <Button icon="pi pi-lock" text rounded :disabled="!data.connect"
-                            v-tooltip.top="$t('credentials')" @click="handleCredentials(data)" />
-                    </div>
+                    <Button icon="pi pi-ellipsis-v" text rounded @click="toggle(data, $event)" />
                 </template>
             </Column>
         </DataTable>
+        <Menu ref="menu" :model="options" :popup="true" />
     </div>
 </template>

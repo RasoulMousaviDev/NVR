@@ -9,15 +9,21 @@ export default defineEventHandler(async (event) => {
     const safeDir =
         baseDir + direction.filter((d) => !d.includes("..")).join("/");
 
-    const items = readdirSync(safeDir)
-        .map((name) => {
-            const fullPath = join(safeDir, name);
-            const stats = statSync(fullPath);
-            const type = stats.isDirectory() ? "folder" : "file";
-            if (type == "file") name = name.replace("enc", "mp4");
-            return { name, type };
-        })
-        .filter((item) => item.type == 'folder' || item.name.includes("mp4"));
+    try {
+        const items = readdirSync(safeDir)
+            .map((name) => {
+                const fullPath = join(safeDir, name);
+                const stats = statSync(fullPath);
+                const type = stats.isDirectory() ? "folder" : "file";
+                if (type == "file") name = name.replace("enc", "mp4");
+                return { name, type };
+            })
+            .filter(
+                (item) => item.type == "folder" || item.name.includes("mp4")
+            );
 
-    return { items };
+        return { items };
+    } catch (error) {
+        return { items: [] };
+    }
 });

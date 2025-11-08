@@ -1,4 +1,6 @@
 <script setup>
+definePageMeta({ middleware: ['auth'] })
+
 const dialog = useDialog()
 
 const folders = ref(['nvr'])

@@ -16,7 +16,11 @@ export default defineEventHandler(async () => {
             username TEXT NULL,
             password TEXT NULL,
             record INTEGER DEFAULT 1,
+            audio INTEGER DEFAULT 1,
+            quality TEXT DEFAULT 'medium',
+            duration INTEGER DEFAULT 60,
             connect INTEGER DEFAULT 1,
+            scanned INTEGER DEFAULT 0,
             last_seen INTEGER
         );`;
 

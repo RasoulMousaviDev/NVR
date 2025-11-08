@@ -14,6 +14,6 @@ watch(pending, (v) => !v && status.value == 'success' && emit('refresh', false))
         <hr>
         <Button :label="$t('scan')" icon="pi pi-search" severity="warn" :loading="pending"
             :disabled="fetching | pending" @click="execute()" />
-        <Button :label="$t('new-camera')" icon="pi pi-plus" />
+        <!-- <Button :label="$t('new-camera')" icon="pi pi-plus" /> -->
     </div>
 </template>

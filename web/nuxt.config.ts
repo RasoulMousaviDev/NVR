@@ -6,7 +6,7 @@ export default defineNuxtConfig({
     devtools: { enabled: false },
     ssr: false,
     css: ['./app/assets/css/main.css'],
-    modules: ['@primevue/nuxt-module', '@nuxtjs/i18n'],
+    modules: ['@primevue/nuxt-module', '@nuxtjs/i18n', 'nuxt-auth-utils'],
     primevue: {
         options: {
             ripple: true,
