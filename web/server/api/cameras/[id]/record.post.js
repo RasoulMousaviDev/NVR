@@ -42,21 +42,23 @@ const activeRecordings = {};
 
 const startRecord = ({ model, username, password, id, ip }) => {
     const url = `rtsp://${username}:${password}@${ip}:554/stream`;
-    
+
     const script = join(process.cwd(), "scripts/record");
 
     const recorder = spawn(script, [model, url, 10, "/tmp/nvr"]);
-    
+
+    logger(`${model} connected — starting record ...`);
+
     recorder.stdout.on("data", (data) => {
-        console.log(`stdout: ${data}`);
+        logger(`${model} GStreamer: ${data.toString()}`);
     });
 
     recorder.stderr.on("data", (data) => {
-        console.error(`stderr: ${data}`);
+        logger(`${model} GStreamer error: ${data.toString()}`);
     });
 
-    recorder.on("close", (code) => {
-        console.log(`Child process exited with code ${code}`);
+    recorder.on("close", () => {
+        logger(`${model} disconnected — stopping record ...`);
     });
 
     activeRecordings[id] = recorder;

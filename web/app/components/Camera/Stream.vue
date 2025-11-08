@@ -1,14 +1,16 @@
 <script setup>
 const dialog = inject('dialogRef')
 
-const data = dialog.value.data
+const { url } = dialog.value.data
 
-const url = `/api/cameras/${data.id}/stream`
+const img = ref()
+
+onBeforeUnmount(() => img.value.src = '')
 </script>
 
 <template>
     <div class="flex flex-col gap-4">
-        <img controls autoplay muted playsinline width="1080" height="640" :src="url"></img>
+        <img ref="img" controls autoplay muted playsinline width="1080" height="640" :src="url">
         <div class="flex items-center justify-between">
             <Button :label="$t('back')" severity="secondary" outlined @click="dialog.close()" />
         </div>

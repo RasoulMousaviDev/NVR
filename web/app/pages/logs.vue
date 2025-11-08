@@ -30,8 +30,8 @@ onUnmounted(() => {
         <LogHeader />
         <div ref="scroll" class="shadow-inner rounded-lg bg-primary overflow-y-auto h-[50vh] p-6 ltr">
             <ul class="text-white flex flex-col gap-1 font-['arial']">
-                <li v-for="line in lines">
-                    {{ line }}
+                <li v-for="line in lines" v-html="line" class="flex gap-2 [&>span]:text-amber-400">
+                    
                 </li>
             </ul>
         </div>

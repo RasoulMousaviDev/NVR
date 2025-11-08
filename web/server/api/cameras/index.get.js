@@ -15,11 +15,11 @@ export default defineEventHandler(async () => {
             hardware_id TEXT NULL,
             username TEXT NULL,
             password TEXT NULL,
-            record INTEGER DEFAULT 1,
-            audio INTEGER DEFAULT 1,
+            record INTEGER DEFAULT 0,
+            audio INTEGER DEFAULT 0,
             quality TEXT DEFAULT 'medium',
             duration INTEGER DEFAULT 60,
-            connect INTEGER DEFAULT 1,
+            connect INTEGER DEFAULT 0,
             scanned INTEGER DEFAULT 0,
             last_seen INTEGER
         );`;

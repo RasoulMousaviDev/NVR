@@ -1,17 +1,18 @@
 import { watchFile, readFileSync } from "fs";
 
-const filePath = "/tmp/nvr/logs";
-
 export default defineWebSocketHandler({
     open: (peer) => {
-        const allLines = readFileSync(filePath, "utf-8").trim().split("\n");
+        const logsFile = process.env.LOGS_FILE_PATH;
+
+        const allLines = readFileSync(logsFile, "utf-8").trim().split("***");
+
         peer.send(JSON.stringify({ lines: allLines }));
 
         let flag = allLines.length;
 
-        watchLogFile(filePath, (data) => {
-            const lines = data.trim().split("\n");
-
+        watchLogFile(logsFile, (data) => {
+            const lines = data.trim().split("***");
+            
             peer.send(
                 JSON.stringify({ lines: lines.slice(flag - lines.length) })
             );
@@ -21,9 +22,9 @@ export default defineWebSocketHandler({
     },
 });
 
-function watchLogFile(filePath, onChange) {
-    watchFile(filePath, { interval: 1000 }, () => {
-        const content = readFileSync(filePath, "utf-8");
+function watchLogFile(path, onChange) {
+    watchFile(path, { interval: 1000 }, () => {
+        const content = readFileSync(path, "utf-8");
         onChange(content);
     });
 }

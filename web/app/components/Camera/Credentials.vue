@@ -10,10 +10,10 @@ const form = reactive({ username: '', password: '' })
 const readonly = ref(true)
 
 const { pending, execute } = useFetch(`/api/cameras/${id}/credentials`, {
-    immediate: false, method: 'POST', body: form,
+    method: 'POST', body: form, immediate: false,
     onResponse({ response }) {
         if (response.ok) {
-            toast.add({ severity: 'success', summary: 'Success', detail: '', life: 3000 })
+            toast.add({ severity: 'success', summary: 'Success', detail: response._data.message, life: 3000 })
             dialog.value.close()
         } else {
             toast.add({ severity: 'error', summary: 'Error', detail: response._data.message, life: 3000 })

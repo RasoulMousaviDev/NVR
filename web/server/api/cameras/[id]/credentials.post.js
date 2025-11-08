@@ -30,7 +30,7 @@ export default defineEventHandler(async (event) => {
             event,
             createError({ statusCode: 404, statusMessage: "Camera not found" })
         );
-    return { success: true };
+    return { message: 'Authenticated' };
 });
 
 function login(ip, username, password) {

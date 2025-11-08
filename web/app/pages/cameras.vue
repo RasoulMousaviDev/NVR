@@ -24,7 +24,7 @@ const CameraCredentials = defineAsyncComponent(() => import('~/components/Camera
 
 const toggle = (data, event) => {
     const props = { modal: true, closable: true, header: data.model }
-    const disabled = data.connect
+    const disabled = !data.connect
 
     options.value = [
         {
@@ -33,21 +33,30 @@ const toggle = (data, event) => {
         },
         {
             label: t('live-stream'), icon: 'pi pi-play-circle', disabled,
-            command: () => dialog.open(CameraStream, { props, data })
+            command: async () => {
+                const url = `/api/cameras/${data.id}/stream?t=${Date.now()}`
+
+                const { status, error } = await useFetch(url)
+
+                if (status.value == 'success')
+                    return dialog.open(CameraStream, { props, data: { url } })
+
+                toast.add({ severity: 'error', summary: 'Error', detail: error.value.data.message, life: 3000 })
+
+            }
         },
         {
             label: t('settings'), icon: 'pi pi-cog', disabled,
             command: () => dialog.open(CameraSettings, { props, data })
         },
         {
-            label: t('credentials'), icon: 'pi pi-lock', disabled,
+            label: t('authentication'), icon: 'pi pi-lock', disabled,
             command: () => dialog.open(CameraCredentials, { props, data })
         },
     ]
 
     menu.value.toggle(event);
 };
-
 
 
 const handleRecord = async (camera) => {
@@ -98,7 +107,7 @@ const handleRecord = async (camera) => {
                 <template #body="{ data }">
                     <div class="flex items-center w-full">
                         <InputSwitch v-model="data.record" :true-value="1" :false-value="0"
-                            :disabled="data.connect || data.updating" @value-change="handleRecord(data)" />
+                            :disabled="!data.connect || data.updating" @value-change="handleRecord(data)" />
                     </div>
                 </template>
             </Column>

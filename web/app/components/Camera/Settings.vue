@@ -19,7 +19,8 @@ const { pending, execute } = useFetch(`/api/cameras/${data.id}`, {
     immediate: false, method: 'PATCH', body: form,
     onResponse({ response }) {
         if (response.ok) {
-            toast.add({ severity: 'success', summary: 'Success', detail: '', life: 3000 })
+            toast.add({ severity: 'success', summary: 'Success', detail: response._data.message, life: 3000 })
+            Object.assign(data, form)
             dialog.value.close()
         } else {
             toast.add({ severity: 'error', summary: 'Error', detail: response._data.message, life: 3000 })

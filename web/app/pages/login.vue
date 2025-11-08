@@ -28,7 +28,7 @@ const { pending, execute } = useFetch('/api/login', {
 
 <template>
     <div class="bg-gray-50 h-screen w-screen flex items-center">
-        <form class="w-120 h-96 m-auto flex flex-col gap-8 p-8 rounded border border-gray-50 bg-white"
+        <form class="w-120 h-96 m-auto flex flex-col gap-8 p-8 rounded-2xl border border-gray-100 bg-white shadow"
             @submit.prevent="execute()">
             <span class="pi pi-user mx-auto text-8xl text-primary opacity-50"></span>
             <FloatLabel variant="on">

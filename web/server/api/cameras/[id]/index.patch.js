@@ -1,3 +1,5 @@
+import Database from "better-sqlite3";
+import { join } from "path";
 import { z } from "zod";
 
 const bodySchema = z.object({
@@ -25,5 +27,5 @@ export default defineEventHandler(async (event) => {
             event,
             createError({ statusCode: 404, statusMessage: "Camera not found" })
         );
-    return { success: true };
+    return { message: 'Updated' };
 });
