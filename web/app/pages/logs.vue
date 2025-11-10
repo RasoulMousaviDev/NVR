@@ -33,7 +33,7 @@ onUnmounted(() => {
         <div ref="scroll" class="shadow-inner rounded-lg bg-primary overflow-y-auto h-[50vh] p-6 ltr">
             <ul class="text-white flex flex-col gap-1 font-['arial']">
                 <li v-for="line in lines" class="flex gap-2">
-                    <span class="text-amber-400">{{ line.date }}</span>
+                    <span class="text-amber-400">[{{ line.date }}]</span>
                     <p>{{ line.text }}</p>
                 </li>
             </ul>

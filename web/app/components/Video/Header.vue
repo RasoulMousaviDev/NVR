@@ -15,12 +15,12 @@ watch(() => folders.value.length, (v, o) => {
 <template>
     <div class="flex items-center gap-2">
         <span class="text-2xl font-bold pl-4">{{ $t('videos') }}</span>
-        <InputText class="grow ltr" readonly :value="folders.join('/')" />
+        <InputText class="grow ltr" readonly :value="['cameras', ...folders].join('/')" />
         <Button icon="pi pi-refresh" rounded text severity="secondary" :loading="fetching"
             @click="emit('refresh', true)" />
         <Button icon="pi pi-chevron-right" text rounded severity="secondary" :disabled="history.length < 1 || fetching"
             @click="folders.push(history.pop())" />
-        <Button icon="pi pi-chevron-left" text rounded severity="secondary" :disabled="folders.length <= 1 || fetching"
+        <Button icon="pi pi-chevron-left" text rounded severity="secondary" :disabled="folders.length == 0 || fetching"
             @click="history.push(folders.pop())" />
     </div>
 </template>

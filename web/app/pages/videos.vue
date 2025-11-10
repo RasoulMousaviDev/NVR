@@ -3,7 +3,7 @@ definePageMeta({ middleware: ['auth'] })
 
 const dialog = useDialog()
 
-const folders = ref(['nvr'])
+const folders = ref([])
 
 const route = useRoute()
 

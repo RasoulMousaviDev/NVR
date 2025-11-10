@@ -1,5 +1,6 @@
+import Database from "better-sqlite3";
+import { join } from "path";
 import { z } from "zod";
-import { db } from "~~/server/utils/db";
 
 const bodySchema = z.object({
     image_quality: z.enum(['low', 'medium', 'high', 'ultra']),
@@ -13,9 +14,11 @@ export default defineEventHandler(async (event) => {
         event,
         bodySchema.parse
     );
+    const db = new Database(join(process.cwd(), "database/nvr.db"));
 
     const sql =
         "UPDATE cameras SET image_quality = ?, audio_quality = ?, duration = ? WHERE id = ?";
+        
     const result = await db.prepare(sql).run(image_quality, audio_quality, duration, id);
 
     db.close();

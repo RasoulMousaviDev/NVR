@@ -1,5 +1,3 @@
-// server/api/files/[name].ts
-import { defineEventHandler, getQuery } from "h3";
 import { spawn } from "child_process";
 import { promises as fs } from "fs";
 import { join } from "path";

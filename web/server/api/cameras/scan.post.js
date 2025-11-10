@@ -1,9 +1,9 @@
+import Database from "better-sqlite3";
 import logger from "~~/server/utils/logger";
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { join } from "path";
 import { XMLParser } from "fast-xml-parser";
-import { db } from "~~/server/utils/db";
 
 export default defineEventHandler(async () => {
     try {
@@ -101,6 +101,8 @@ const getInfo = async (devices) => {
 }
 
 const upsert = (cameras) => {
+    const db = new Database(join(process.cwd(), "database/nvr.db"));
+
     db.prepare(`UPDATE cameras SET connect = 0;`).run();
 
     const now = Math.floor(Date.now() / 1000);

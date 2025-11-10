@@ -2,12 +2,11 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 export default defineEventHandler(async (event) => {
-    let { direction = ["nvr"] } = getQuery(event);
+    let { direction = [] } = getQuery(event);
     if (typeof direction !== "object") direction = [direction];
 
-    const baseDir = "/tmp/";
-    const safeDir =
-        baseDir + direction.filter((d) => !d.includes("..")).join("/");
+    const baseDir = process.env.STORAGE_PATH;
+    const safeDir = join(baseDir, ...direction.filter((d) => !d.includes("..")))
 
     try {
         const items = readdirSync(safeDir)

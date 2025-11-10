@@ -1,6 +1,6 @@
 import { spawn } from "child_process";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
     return await new Promise((resolve, reject) => {
         const df = spawn("df", [process.env.STORAGE_PATH]);
 

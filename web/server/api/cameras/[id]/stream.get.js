@@ -1,9 +1,12 @@
+import Database from "better-sqlite3";
 import crypto from "crypto";
 import { spawn } from "child_process";
-import { db } from "~~/server/utils/db";
+import { join } from "path";
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event);
+
+    const db = new Database(join(process.cwd(), "database/nvr.db"));
 
     const camera = db.prepare(`SELECT * FROM Cameras WHERE id = ?;`).get(id);
 

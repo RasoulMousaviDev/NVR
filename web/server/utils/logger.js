@@ -3,7 +3,7 @@ import moment from "moment";
 import path from "path";
 
 export default async (text) => {
-    const date = moment().format("Y / m / d - H:m:s");
+    const date = moment().format("Y/M/D - H:mm:ss");
     const filePath = process.env.LOGS_FILE_PATH;
     const dir = path.dirname(filePath);
     await fs.promises.mkdir(dir, { recursive: true });
