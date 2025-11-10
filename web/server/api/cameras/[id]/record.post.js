@@ -1,7 +1,9 @@
-import Database from "better-sqlite3";
 import crypto from "crypto";
 import { join } from "path";
 import { spawn } from "child_process";
+import { db } from "~~/server/utils/db";
+
+let watcher;
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event);
@@ -9,8 +11,6 @@ export default defineEventHandler(async (event) => {
     const { record } = await readBody(event);
 
     if (record != undefined) {
-        const db = new Database(join(process.cwd(), "database/nvr.db"));
-
         const camera = db
             .prepare(`SELECT * FROM Cameras WHERE id = ?;`)
             .get(id);
@@ -25,7 +25,17 @@ export default defineEventHandler(async (event) => {
             camera.password = decrypt(camera.password);
 
             startRecord(camera);
-        } else activeRecordings[id]?.kill("SIGINT");
+
+            if (Object.keys(activeRecordings).length === 1)
+                watcher = storageWatch()
+
+        } else {
+            activeRecordings[id]?.kill("SIGINT")
+            delete activeRecordings[id]
+
+            if (Object.keys(activeRecordings).length === 0)
+                watcher.kill("SIGINT")
+        };
 
         db.prepare("UPDATE cameras SET record = ? WHERE id = ?").run(
             record,
@@ -40,12 +50,25 @@ export default defineEventHandler(async (event) => {
 
 const activeRecordings = {};
 
-const startRecord = ({ model, username, password, id, ip }) => {
+const startRecord = (camera) => {
+    const { username, password, ip } = camera
+    const { model, duration, image_quality } = camera
+    const { audio, audio_quality } = camera
+
     const url = `rtsp://${username}:${password}@${ip}:554/stream`;
 
     const script = join(process.cwd(), "scripts/record");
 
-    const recorder = spawn(script, [model, url, 10, "/tmp/nvr"]);
+    const params = [
+        model,
+        url,
+        duration,
+        image_quality,
+        process.env.STORAGE_PATH,
+        audio ? audio_quality : "off"
+    ]
+
+    const recorder = spawn(script, params);
 
     logger(`${model} connected — starting record ...`);
 
@@ -61,8 +84,30 @@ const startRecord = ({ model, username, password, id, ip }) => {
         logger(`${model} disconnected — stopping record ...`);
     });
 
-    activeRecordings[id] = recorder;
+    activeRecordings[camera.id] = recorder;
 };
+
+const storageWatch = () => {
+    const script = join(process.cwd(), "scripts/storage");
+
+    const storage = spawn(script);
+
+    logger('Storage watch started');
+
+    storage.stdout.on("data", (data) => {
+        logger(`storage: ${data.toString()}`);
+    });
+
+    storage.stderr.on("data", (data) => {
+        logger(`storage error: ${data.toString()}`);
+    });
+
+    storage.on("close", () => {
+        logger('Storage watch stopped');
+    });
+
+    return storage
+}
 
 function decrypt(str) {
     const [iv_b64, tag_b64, ct_b64] = str.split(":");

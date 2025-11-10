@@ -1,9 +1,6 @@
-import Database from "better-sqlite3";
-import { join } from "path";
+import { db } from "~~/server/utils/db";
 
 export default defineEventHandler(async () => {
-    const db = new Database(join(process.cwd(), "database/nvr.db"));
-
     const sql = `
         CREATE TABLE IF NOT EXISTS cameras (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,7 +14,8 @@ export default defineEventHandler(async () => {
             password TEXT NULL,
             record INTEGER DEFAULT 0,
             audio INTEGER DEFAULT 0,
-            quality TEXT DEFAULT 'medium',
+            image_quality TEXT DEFAULT 'medium',
+            audio_quality TEXT DEFAULT 'off',
             duration INTEGER DEFAULT 60,
             connect INTEGER DEFAULT 0,
             scanned INTEGER DEFAULT 0,

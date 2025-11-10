@@ -78,6 +78,8 @@ static int rtsp_check(const char *ip)
     close(sock);
 
     if (strstr(buf, "RTSP/1.0") || strstr(buf, "401"))
+        if(strstr(buf, "audio"))
+            return 2;
         return 1; // treat 401 as valid RTSP
     return 0;
 }
@@ -166,7 +168,8 @@ static void handle_probe(const char *ip)
             return;
     }
 
-    if (!rtsp_check(ip))
+    int res = rtsp_check(ip);
+    if (!res)
     {
         if (bl_count < 1024)
         {
@@ -175,7 +178,7 @@ static void handle_probe(const char *ip)
         return;
     }
 
-    printf("%s\n", ip);
+    printf("%s %d\n", ip, res - 1);
 }
 
 /* ------------------------------ Main ------------------------------- */

@@ -7,7 +7,9 @@ onMounted(() => {
     let flag = false
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.lines) lines.value.push(...data.lines);
+        console.log(data);
+        
+        if (data.lines && data.lines.length > 0) lines.value.push(...data.lines);
 
         nextTick(() => {
             scroll.value.scrollTo({
@@ -30,8 +32,9 @@ onUnmounted(() => {
         <LogHeader />
         <div ref="scroll" class="shadow-inner rounded-lg bg-primary overflow-y-auto h-[50vh] p-6 ltr">
             <ul class="text-white flex flex-col gap-1 font-['arial']">
-                <li v-for="line in lines" v-html="line" class="flex gap-2 [&>span]:text-amber-400">
-                    
+                <li v-for="line in lines" class="flex gap-2">
+                    <span class="text-amber-400">{{ line.date }}</span>
+                    <p>{{ line.text }}</p>
                 </li>
             </ul>
         </div>

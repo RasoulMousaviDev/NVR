@@ -9,9 +9,11 @@ export default async (text) => {
     await fs.promises.mkdir(dir, { recursive: true });
     await fs.promises.writeFile(filePath, "", { flag: "a" });
 
+    const json = JSON.stringify({ date, text })
+
     fs.promises.appendFile(
         process.env.LOGS_FILE_PATH,
-        `***<span>[ ${date} ]</span><pre>${text}<pre>`,
-        () => {}
+        `***${json}\n`,
+        () => { }
     );
 };

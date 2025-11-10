@@ -58,6 +58,7 @@ unsigned char *read_aes_key(const char *path, const char *var, int *key_len)
             break;
         }
     }
+
     fclose(f);
     if (!key)
         return NULL;
@@ -163,9 +164,12 @@ int file_stable(const char *path)
     struct stat s1, s2;
     if (stat(path, &s1) != 0)
         return 0;
-    sleep(1);
+
+    sleep(3);
+
     if (stat(path, &s2) != 0)
         return 0;
+
     return s1.st_size == s2.st_size;
 }
 
@@ -220,15 +224,17 @@ int monitor_and_encrypt_once(const char *path, unsigned char *key, int duration)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 5)
+    if (argc != 7)
     {
-        printf("Usage: %s <name> <rtsp> <duration_sec> <storage>\n", argv[0]);
+        printf("Usage: %s <name> <rtsp> <duration_sec> <image_quality> <storage> <audio>\n", argv[0]);
         return 1;
     }
     const char *name = argv[1];
     const char *rtsp = argv[2];
     int duration = atoi(argv[3]);
-    const char *storage = argv[4];
+    const char *image_quality = argv[4];
+    const char *storage = argv[5];
+    const char *audio = argv[6];
 
     int key_len;
     unsigned char *key = read_aes_key(ENV_FILE, KEY_VAR, &key_len);
@@ -249,10 +255,46 @@ int main(int argc, char *argv[])
 
     gst_init(NULL, NULL);
 
-    char *pipeline = g_strdup_printf(
-        "rtspsrc location=%s ! rtph264depay ! h264parse ! "
-        "splitmuxsink location=%s/%%2d.tmp max-size-time=%ld muxer=mp4mux",
-        rtsp, path, (long)duration * 1000000000L);
+    int video_bitrate;
+    if (strcmp(image_quality, "low") == 0)
+        video_bitrate = 1000; // kbps
+    else if (strcmp(image_quality, "medium") == 0)
+        video_bitrate = 2000;
+    else if (strcmp(image_quality, "high") == 0)
+        video_bitrate = 4000;
+    else if (strcmp(image_quality, "ultra") == 0)
+        video_bitrate = 8000;
+    else
+        video_bitrate = 2000;
+
+    char *pipeline;
+
+    if (strcmp(audio, "off") == 0)
+    {
+        pipeline = g_strdup_printf(
+            "rtspsrc location=%s ! rtph264depay ! h264parse ! "
+            "splitmuxsink location=%s/%%2d.tmp max-size-time=%ld muxer=mp4mux",
+            rtsp, path, (long)duration * 60000000000L);
+    }
+    else
+    {
+        int audio_bitrate;
+        if (strcmp(audio, "low") == 0)
+            audio_bitrate = 64000;
+        else if (strcmp(audio, "medium") == 0)
+            audio_bitrate = 96000;
+        else if (strcmp(audio, "high") == 0)
+            audio_bitrate = 128000;
+        else
+            audio_bitrate = 96000;
+
+        pipeline = g_strdup_printf(
+            "rtspsrc location=%s ! rtph264depay ! h264parse ! x264enc bitrate=%d ! "
+            "tee name=t "
+            "t. ! queue ! splitmuxsink location=%s/%%02d.tmp max-size-time=%ld muxer=mp4mux name=mux "
+            "t. ! queue ! decodebin ! audioconvert ! audioresample ! voaacenc bitrate=%d ! mux.",
+            rtsp, video_bitrate, path, (long)duration * 60000000000L, audio_bitrate);
+    }
 
     GError *error = NULL;
     GstElement *pipeline_el = gst_parse_launch(pipeline, &error);
@@ -294,6 +336,39 @@ int main(int argc, char *argv[])
             }
         }
         monitor_and_encrypt_once(path, key, duration);
+    }
+
+    if (stop_flag)
+    {
+        gst_element_send_event(pipeline_el, gst_event_new_eos());
+
+        while (1)
+        {
+            GstMessage *msg = gst_bus_timed_pop_filtered(
+                bus, GST_CLOCK_TIME_NONE, GST_MESSAGE_ERROR | GST_MESSAGE_EOS);
+
+            if (!msg)
+                continue;
+
+            if (GST_MESSAGE_TYPE(msg) == GST_MESSAGE_EOS)
+            {
+                printf("EOS received — finalize complete\n");
+                gst_message_unref(msg);
+                break;
+            }
+            else if (GST_MESSAGE_TYPE(msg) == GST_MESSAGE_ERROR)
+            {
+                GError *err = NULL;
+                gst_message_parse_error(msg, &err, NULL);
+                fprintf(stderr, "GStreamer error while finalizing: %s\n",
+                        err ? err->message : "unknown");
+                if (err)
+                    g_error_free(err);
+                gst_message_unref(msg);
+                break;
+            }
+            gst_message_unref(msg);
+        }
     }
 
     gst_element_set_state(pipeline_el, GST_STATE_NULL);

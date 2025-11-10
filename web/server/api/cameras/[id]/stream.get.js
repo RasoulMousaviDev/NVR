@@ -1,14 +1,9 @@
-import Database from "better-sqlite3";
 import crypto from "crypto";
-import { join } from "path";
 import { spawn } from "child_process";
+import { db } from "~~/server/utils/db";
 
 export default defineEventHandler(async (event) => {
-    const logsFile = process.env.LOGS_FILE_PATH;
-
     const { id } = getRouterParams(event);
-
-    const db = new Database(join(process.cwd(), "database/nvr.db"));
 
     const camera = db.prepare(`SELECT * FROM Cameras WHERE id = ?;`).get(id);
 
@@ -35,20 +30,12 @@ export default defineEventHandler(async (event) => {
     });
 
     const gst = spawn("gst-launch-1.0", [
-        "rtspsrc",
-        `location=${rtspUrl}`,
-        "latency=100",
-        "!",
-        "decodebin",
-        "!",
-        "videoconvert",
-        "!",
-        "jpegenc",
-        "!",
-        "multipartmux",
-        "boundary=frame",
-        "!",
-        "fdsink",
+        "rtspsrc", `location=${rtspUrl}`, "latency=100",
+        "!", "decodebin",
+        "!", "videoconvert",
+        "!", "jpegenc",
+        "!", "multipartmux", "boundary=frame",
+        "!", "fdsink",
     ]);
 
     gst.stdout.pipe(event.node.res);

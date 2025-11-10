@@ -7,7 +7,7 @@ import { join } from "path";
 export default defineEventHandler(async (event) => {
     const { path } = getRouterParams(event);
 
-    const baseDir = "/tmp";
+    const baseDir = process.env.STORAGE_PATH;
 
     const filepath = join(baseDir, path);
 
@@ -25,29 +25,27 @@ export default defineEventHandler(async (event) => {
         `attachment; filename="${name.replace(/"/g, '\\"')}"`
     );
 
-    const child = spawn(join(process.cwd(), "scripts/play"), [filepath]);
+    const play = spawn(join(process.cwd(), "scripts/play"), [filepath]);
 
-    child.stderr.on("data", (chunk) => {
-        console.error("decrypt stderr:", chunk.toString());
+    logger(`file decrypt starting ...`);
+
+    play.stderr.on("data", (chunk) => {
+        logger(`decrypt stderr: ${chunk.toString()}`);
     });
 
-    child.stdout.pipe(res);
+    play.stdout.pipe(res);
 
-    child.on("close", (code) => {
-        if (code !== 0) {
-            console.error("decrypt process exited with", code);
-            try {
-                res.end();
-            } catch (e) {}
-        } else {
-            try {
-                res.end();
-            } catch (e) {}
-        }
+    play.on("close", (code) => {
+        try {
+            if (code !== 0)
+                logger(`decrypt process exited with ${code}`);
+            res.end();
+        } catch (e) { }
+
     });
 
     return await new Promise((resolve) => {
-        child.on("exit", () => resolve(null));
-        child.on("error", () => resolve(null));
+        play.on("exit", () => resolve(null));
+        play.on("error", () => resolve(null));
     });
 });

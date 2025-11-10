@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 
 export default defineEventHandler(async (event) => {
     return await new Promise((resolve, reject) => {
-        const df = spawn("df", ["/dev/sdb1"]);
+        const df = spawn("df", [process.env.STORAGE_PATH]);
 
         let output = "";
         df.stdout.on("data", (data) => (output += data.toString()));

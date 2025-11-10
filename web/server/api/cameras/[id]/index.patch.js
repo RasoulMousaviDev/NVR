@@ -1,24 +1,22 @@
-import Database from "better-sqlite3";
-import { join } from "path";
 import { z } from "zod";
+import { db } from "~~/server/utils/db";
 
 const bodySchema = z.object({
-    quality: z.enum(['low', 'medium', 'high', 'ultra']),
+    image_quality: z.enum(['low', 'medium', 'high', 'ultra']),
+    audio_quality: z.enum(['off', 'low', 'medium', 'high']),
     duration: z.number().min(1).max(60),
-    audio: z.boolean(),
 });
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event);
-    const { quality, duration, audio } = await readValidatedBody(
+    const { image_quality, audio_quality = 'off', duration } = await readValidatedBody(
         event,
         bodySchema.parse
     );
 
-    const db = new Database(join(process.cwd(), "database/nvr.db"));
     const sql =
-        "UPDATE cameras SET quality = ?, duration = ?, audio = ? WHERE id = ?";
-    const result = await db.prepare(sql).run(quality, duration, +audio, id);
+        "UPDATE cameras SET image_quality = ?, audio_quality = ?, duration = ? WHERE id = ?";
+    const result = await db.prepare(sql).run(image_quality, audio_quality, duration, id);
 
     db.close();
 

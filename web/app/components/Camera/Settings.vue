@@ -6,12 +6,14 @@ const data = dialog.value.data
 const toast = useToast()
 
 const form = reactive({
-    quality: data.quality,
+    image_quality: data.image_quality,
+    audio_quality: data.audio_quality || 'off',
     duration: data.duration,
-    audio: data.audio,
 })
 
-const qualities = reactive(['low', 'medium', 'high', 'ultra'])
+const iamge_qualities = reactive(['low', 'medium', 'high', 'ultra'])
+
+const audio_qualities = reactive(['off', 'low', 'medium', 'high', 'ultra'])
 
 const readonly = ref(true)
 
@@ -32,8 +34,12 @@ const { pending, execute } = useFetch(`/api/cameras/${data.id}`, {
 <template>
     <form class="flex flex-col gap-8 pt-4" @submit.prevent="execute()" @click="readonly = false">
         <FloatLabel variant="on">
-            <Select v-model="form.quality" :options="qualities" :option-label="$t" fluid :readonly />
-            <label>{{ $t('quality') }}</label>
+            <Select v-model="form.image_quality" :options="iamge_qualities" :option-label="$t" fluid :readonly />
+            <label>{{ $t('iamge-quality') }}</label>
+        </FloatLabel>
+        <FloatLabel v-if="data.audio" variant="on">
+            <Select v-model="form.audio_quality" :options="audio_qualities" :option-label="$t" fluid :readonly />
+            <label>{{ $t('audio-quality') }}</label>
         </FloatLabel>
         <InputGroup>
             <FloatLabel variant="on">
@@ -44,11 +50,6 @@ const { pending, execute } = useFetch(`/api/cameras/${data.id}`, {
                 <span>{{ $t('minute') }}</span>
             </InputGroupAddon>
         </InputGroup>
-
-        <label class="flex items-center justify-between cursor-pointer pl-2">
-            <span>{{ $t('audio') }}</span>
-            <InputSwitch v-model="form.audio" />
-        </label>
         <div class="w-90 flex items-center justify-between">
             <Button :label="$t('back')" severity="secondary" outlined @click="dialog.close()" />
             <Button :label="$t('save')" type="submit" :loading="pending" />
