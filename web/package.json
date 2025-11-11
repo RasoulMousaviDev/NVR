@@ -1,33 +1,29 @@
 {
-  "name": "nvr",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
-  },
-  "dependencies": {
-    "@nuxtjs/i18n": "^10.2.0",
-    "@primeuix/themes": "^1.2.5",
-    "@tailwindcss/vite": "^4.1.16",
-    "better-sqlite3": "^12.4.1",
-    "fast-xml-parser": "^5.3.1",
-    "moment": "^2.30.1",
-    "momnet": "^0.0.1-security",
-    "nuxt": "^4.2.0",
-    "nuxt-auth-utils": "^0.5.25",
-    "primeicons": "^7.0.0",
-    "primevue": "^4.4.1",
-    "tailwindcss": "^4.1.16",
-    "tailwindcss-primeui": "^0.6.1",
-    "vue": "^3.5.22",
-    "vue-router": "^4.6.3",
-    "zod": "^4.1.12"
-  },
-  "devDependencies": {
-    "@primevue/nuxt-module": "^4.4.1"
-  }
+    "name": "nvr",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "build": "nuxt build && rm -rf .output/server/node_modules/@babel && cp -r scripts .output/scripts && cp -r database .output/database",
+        "dev": "nuxt dev",
+        "generate": "nuxt generate",
+        "preview": "nuxt preview",
+        "postinstall": "nuxt prepare"
+    },
+    "dependencies": {
+        "@nuxtjs/i18n": "^10.2.0",
+        "@primeuix/themes": "^1.2.5",
+        "@tailwindcss/vite": "^4.1.16",
+        "better-sqlite3": "^12.4.1",
+        "fast-xml-parser": "^5.3.1",
+        "nuxt": "^4.2.0",
+        "nuxt-auth-utils": "^0.5.25",
+        "primeicons": "^7.0.0",
+        "primevue": "^4.4.1",
+        "tailwindcss": "^4.1.16",
+        "vue": "^3.5.22",
+        "vue-router": "^4.6.3"
+    },
+    "devDependencies": {
+        "@primevue/nuxt-module": "^4.4.1"
+    }
 }

@@ -1,6 +1,5 @@
 @import 'primeicons/primeicons.css';
 @import "tailwindcss";
-@import "tailwindcss-primeui";
 @import './fonts.css';
 
 @layer utilities {

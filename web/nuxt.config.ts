@@ -11,9 +11,25 @@ export default defineNuxtConfig({
     primevue: {
         options: {
             ripple: true,
+
         },
         importPT: { from: '@/themes/pt.ts', as: 'passthrough' },
         importTheme: { from: '@/themes/index.ts', as: 'myTheme' },
+        components: {
+            include: [
+                'Button',
+                'DataTable',
+                'InputSwitch',
+                'InputText',
+                'Password',
+                'Menu',
+                'DynamicDialog',
+                'PanelMenu',
+                'Knob',
+                'FloatLabel',
+                'Toast'
+            ]
+        }
     },
     i18n: {
         locales: [
