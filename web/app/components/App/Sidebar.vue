@@ -23,7 +23,7 @@ const items = computed(() => [
         command: function () { router.push('/logs') }
     },
 ].map(item => {
-    route.name == item.name && (item.class = 'bg-surface-50');
+    route.name == item.name && (item.class = 'bg-gray-50');
     return item;
 }));
 

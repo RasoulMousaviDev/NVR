@@ -30,7 +30,7 @@ const { pending, execute } = useFetch('/api/login', {
     <div class="bg-gray-50 h-screen w-screen flex items-center">
         <form class="w-120 h-96 m-auto flex flex-col gap-8 p-8 rounded-2xl border border-gray-100 bg-white shadow"
             @submit.prevent="execute()">
-            <span class="pi pi-user mx-auto text-8xl text-primary opacity-50"></span>
+            <span class="pi pi-user mx-auto text-8xl text-gray-500"></span>
             <FloatLabel variant="on">
                 <InputText v-model="form.username" fluid class="ltr" />
                 <label>{{ $t('username') }}</label>
