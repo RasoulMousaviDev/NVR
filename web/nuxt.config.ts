@@ -5,6 +5,7 @@ export default defineNuxtConfig({
     compatibilityDate: '2025-07-15',
     devtools: { enabled: false },
     ssr: false,
+    sourcemap: false,
     css: ['./app/assets/css/main.css'],
     modules: ['@primevue/nuxt-module', '@nuxtjs/i18n', 'nuxt-auth-utils'],
     primevue: {
@@ -33,5 +34,8 @@ export default defineNuxtConfig({
         experimental: {
             websocket: true
         }
-    }
+    },
+    build: {
+        analyze: true,
+    },
 })
