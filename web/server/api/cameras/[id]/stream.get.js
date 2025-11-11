@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import Database from '~~/server/utils/db';
 import crypto from "crypto";
 import { spawn } from "child_process";
 import { join } from "path";
@@ -6,11 +6,11 @@ import { join } from "path";
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event);
 
-    const db = new Database(join(process.cwd(), "database/nvr.db"));
+    const db = new Database();
 
-    const camera = db.prepare(`SELECT * FROM Cameras WHERE id = ?;`).get(id);
+    const camera = await db.get(`SELECT * FROM Cameras WHERE id = ?;`, [id]);
 
-    db.close();
+    await db.close();
 
     if (!camera.username || !camera.password) {
         setResponseStatus(event, 401);

@@ -1,4 +1,5 @@
-import Database from "better-sqlite3";
+import Database from '~~/server/utils/db';
+
 import crypto from "crypto";
 import { join } from "path";
 import { spawn } from "child_process";
@@ -11,9 +12,9 @@ export default defineEventHandler(async (event) => {
     const { record } = await readBody(event);
 
     if (record != undefined) {
-        const db = new Database(join(process.cwd(), "database/nvr.db"));
+        const db = new Database();
 
-        const camera = db.prepare(`SELECT * FROM Cameras WHERE id = ?;`).get(id);
+        const camera = await db.get(`SELECT * FROM Cameras WHERE id = ?;`, [id]);
 
         if (record) {
             if (!camera.username || !camera.password) {
@@ -37,12 +38,9 @@ export default defineEventHandler(async (event) => {
                 watcher?.kill("SIGINT")
         };
 
-        db.prepare("UPDATE cameras SET record = ? WHERE id = ?").run(
-            record,
-            id
-        );
+        await db.run("UPDATE cameras SET record = ? WHERE id = ?", [record, id]);
 
-        db.close();
+        await db.close();
     }
 
     return { record };

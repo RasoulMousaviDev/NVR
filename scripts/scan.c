@@ -25,6 +25,8 @@
 #include <netdb.h>
 #include <sqlite3.h>
 #include <ctype.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 
 /* ------------------------------ Config ------------------------------ */
 #define WS_DISCOVER_ADDR "239.255.255.250"
@@ -78,9 +80,9 @@ static int rtsp_check(const char *ip)
     close(sock);
 
     if (strstr(buf, "RTSP/1.0") || strstr(buf, "401"))
-        if(strstr(buf, "audio"))
+        if (strstr(buf, "audio"))
             return 2;
-        return 1; // treat 401 as valid RTSP
+    return 1; // treat 401 as valid RTSP
     return 0;
 }
 
@@ -99,60 +101,74 @@ static const char *probe_template =
 
 static void do_ws_discover_round(discover_handler_t handler)
 {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if (sock < 0)
-        return;
+    struct ifaddrs *ifap, *ifa;
+    getifaddrs(&ifap);
 
-    int ttl = 4;
-    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
-
-    struct sockaddr_in dest;
-    memset(&dest, 0, sizeof(dest));
-    dest.sin_family = AF_INET;
-    dest.sin_port = htons(WS_DISCOVER_PORT);
-    inet_pton(AF_INET, WS_DISCOVER_ADDR, &dest.sin_addr);
-
-    char uuid[64];
-    snprintf(uuid, sizeof(uuid), "%ld-%d", (long)time(NULL), getpid());
-
-    char msg[1024];
-    snprintf(msg, sizeof(msg), probe_template, uuid);
-
-    // bind socket to INADDR_ANY on MCAST port so responses come back correctly
-    struct sockaddr_in bindaddr = {0};
-    bindaddr.sin_family = AF_INET;
-    bindaddr.sin_port = htons(WS_DISCOVER_PORT);
-    bindaddr.sin_addr.s_addr = INADDR_ANY;
-    if (bind(sock, (struct sockaddr *)&bindaddr, sizeof(bindaddr)) < 0)
+    for (ifa = ifap; ifa; ifa = ifa->ifa_next)
     {
-        perror("bind sock");
+        if (!ifa->ifa_addr)
+            continue;
+        if (ifa->ifa_addr->sa_family != AF_INET)
+            continue;
+        if (ifa->ifa_flags & IFF_LOOPBACK)
+            continue;
+        int sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (sock < 0)
+            return;
+
+        int ttl = 4;
+        setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
+
+        struct sockaddr_in dest;
+        memset(&dest, 0, sizeof(dest));
+        dest.sin_family = AF_INET;
+        dest.sin_port = htons(WS_DISCOVER_PORT);
+        inet_pton(AF_INET, WS_DISCOVER_ADDR, &dest.sin_addr);
+
+        char uuid[64];
+        snprintf(uuid, sizeof(uuid), "%ld-%d", (long)time(NULL), getpid());
+
+        char msg[1024];
+        snprintf(msg, sizeof(msg), probe_template, uuid);
+
+        // bind socket to INADDR_ANY on MCAST port so responses come back correctly
+        struct sockaddr_in bindaddr = {0};
+        bindaddr.sin_family = AF_INET;
+        bindaddr.sin_port = htons(WS_DISCOVER_PORT);
+        bindaddr.sin_addr.s_addr = INADDR_ANY;
+        if (bind(sock, (struct sockaddr *)&bindaddr, sizeof(bindaddr)) < 0)
+        {
+            perror("bind sock");
+            close(sock);
+            return;
+        }
+
+        sendto(sock, msg, strlen(msg), 0, (struct sockaddr *)&dest, sizeof(dest));
+
+        struct timeval tv = {2, 0};
+        setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+        char buf[4096];
+        struct sockaddr_in from;
+        socklen_t fromlen = sizeof(from);
+
+        while (1)
+        {
+            int r = recvfrom(sock, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&from, &fromlen);
+            if (r < 0)
+                break;
+
+            buf[r] = '\0';
+            char ipbuf[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &from.sin_addr, ipbuf, sizeof(ipbuf));
+
+            handler(ipbuf);
+        }
+
         close(sock);
-        return;
     }
 
-    sendto(sock, msg, strlen(msg), 0, (struct sockaddr *)&dest, sizeof(dest));
-
-    struct timeval tv = {2, 0};
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-
-    char buf[4096];
-    struct sockaddr_in from;
-    socklen_t fromlen = sizeof(from);
-
-    while (1)
-    {
-        int r = recvfrom(sock, buf, sizeof(buf) - 1, 0, (struct sockaddr *)&from, &fromlen);
-        if (r < 0)
-            break;
-
-        buf[r] = '\0';
-        char ipbuf[INET_ADDRSTRLEN];
-        inet_ntop(AF_INET, &from.sin_addr, ipbuf, sizeof(ipbuf));
-
-        handler(ipbuf);
-    }
-
-    close(sock);
+    freeifaddrs(ifap);
 }
 
 /* --------------------------- Discovery Handler ------------------------ */

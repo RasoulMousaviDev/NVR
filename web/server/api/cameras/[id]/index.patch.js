@@ -1,17 +1,17 @@
-import Database from "better-sqlite3";
-import { join } from "path";
+import Database from '~~/server/utils/db';
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event);
     const { image_quality, audio_quality = 'off', duration } = await readBody(event);
-    const db = new Database(join(process.cwd(), "database/nvr.db"));
+    
+    const db = new Database();
 
     const sql =
         "UPDATE cameras SET image_quality = ?, audio_quality = ?, duration = ? WHERE id = ?";
 
-    const result = await db.prepare(sql).run(image_quality, audio_quality, duration, id);
+    const result = await db.run(sql, [image_quality, audio_quality, duration, id]);
 
-    db.close();
+    await db.close();
 
     if (result.rowCount === 0)
         return sendError(

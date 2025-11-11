@@ -3,7 +3,7 @@
     "type": "module",
     "private": true,
     "scripts": {
-        "build": "nuxt build && rm -rf .output/server/node_modules/@babel && cp -r scripts .output/scripts && cp -r database .output/database",
+        "build": "nuxt build && cp .env .output/.env && cp -r scripts .output/scripts",
         "dev": "nuxt dev",
         "generate": "nuxt generate",
         "preview": "nuxt preview",
@@ -13,12 +13,12 @@
         "@nuxtjs/i18n": "^10.2.0",
         "@primeuix/themes": "^1.2.5",
         "@tailwindcss/vite": "^4.1.16",
-        "better-sqlite3": "^12.4.1",
         "fast-xml-parser": "^5.3.1",
         "nuxt": "^4.2.0",
         "nuxt-auth-utils": "^0.5.25",
         "primeicons": "^7.0.0",
         "primevue": "^4.4.1",
+        "sqlite3": "^5.1.7",
         "tailwindcss": "^4.1.16",
         "vue": "^3.5.22",
         "vue-router": "^4.6.3"

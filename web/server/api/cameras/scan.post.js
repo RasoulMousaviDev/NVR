@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import Database from "~~/server/utils/db";
 import logger from "~~/server/utils/logger";
 import { execFile } from "child_process";
 import { promisify } from "util";
@@ -39,9 +39,6 @@ export default defineEventHandler(async () => {
 
     return {};
 });
-
-
-
 
 const getInfo = async (devices) => {
     const parser = new XMLParser();
@@ -100,39 +97,38 @@ const getInfo = async (devices) => {
     return await Promise.all(devices.flatMap(([ip, audio]) => ports.map(port => portMap(ip, port, audio))));
 }
 
-const upsert = (cameras) => {
-    const db = new Database(join(process.cwd(), "database/nvr.db"));
+const upsert = async (cameras) => {    
+    const db = new Database();
 
-    db.prepare(`UPDATE cameras SET connect = 0;`).run();
+    db.run(`UPDATE cameras SET connect = ?;`, [0]);
 
     const now = Math.floor(Date.now() / 1000);
 
-    const upsert = db.transaction((rows) => {
-        for (const row of rows) {
-            row.last_seen = now;
-            row.record = !!row.connect ? row.record : 0;
-            row.connect = 1;
-            row.scanned = 1;
+    for (const row of cameras) {
+        row.last_seen = now;
+        row.record = row.connect ? row.record : 0;
+        row.connect = 1;
+        row.scanned = 1;
 
-            const keys = Object.keys(row);
-            const cols = keys.join(", ");
-            const placeholders = keys.map((k) => `@${k}`).join(", ");
-            const updates = keys
-                .filter((k) => k !== "ip")
-                .map((k) => `${k}=excluded.${k}`)
-                .join(", ");
+        const keys = Object.keys(row);
+        const cols = keys.join(', ');
+        const placeholders = keys.map((k, i) => `$${k}`).join(', ');
+        const updates = keys
+            .filter((k) => k !== 'ip')
+            .map((k) => `${k}=excluded.${k}`)
+            .join(', ');
 
-            const sql = `
-                    INSERT INTO cameras (${cols})
-                    VALUES (${placeholders})
-                    ON CONFLICT(ip) DO UPDATE SET ${updates};
-                `;
+        const sql = `
+                INSERT INTO cameras (${cols})
+                VALUES (${placeholders})
+                ON CONFLICT(ip) DO UPDATE SET ${updates};
+            Z`;
 
-            db.prepare(sql).run(row);
-        }
-    });
+        const params = {};
+        for (const k of keys) params[`$${k}`] = row[k];
 
-    upsert(cameras);
+        await db.run(sql, params);
+    }
 
-    db.close();
+    await db.close();
 }

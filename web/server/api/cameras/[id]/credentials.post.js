@@ -1,16 +1,15 @@
-import Database from "better-sqlite3";
+import Database from '~~/server/utils/db';
 import crypto from "crypto";
 import { exec } from "child_process";
-import { join } from "path";
 
 export default defineEventHandler(async (event) => {
     const { id } = getRouterParams(event);
 
     const { username, password } = await readBody(event);
 
-    const db = new Database(join(process.cwd(), "database/nvr.db"));
+    const db = new Database();
 
-    const camera = db.prepare(`SELECT * FROM Cameras WHERE id = ?;`).get(id);
+    const camera = await db.get(`SELECT * FROM Cameras WHERE id = ?;`, [id]);
 
     const auth = await login(camera.ip, username, password);
 
@@ -20,10 +19,9 @@ export default defineEventHandler(async (event) => {
     }
 
     const result = await db
-        .prepare("UPDATE cameras SET username = ?, password = ? WHERE id = ?")
-        .run(encrypt(username), encrypt(password), id);
+        .run("UPDATE cameras SET username = ?, password = ? WHERE id = ?", [encrypt(username), encrypt(password), id])
 
-    db.close();
+    await db.close();
 
     if (result.rowCount === 0)
         return sendError(
@@ -43,7 +41,7 @@ function login(ip, username, password) {
             if (!error) return resolve({ ok: true });
             if (stderr.includes("401") || stderr.includes("Unauthorized"))
                 return resolve({ ok: false, message: "Unauthorized" });
-            resolve({ ok: false, message: "Timeout" });
+            resolve({ ok: false, message: "Timeout"  });
         });
     });
 }
