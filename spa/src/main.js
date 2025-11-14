@@ -1,5 +1,4 @@
 import './assets/css/main.css'
-import 'primeicons/primeicons.css'
 
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
@@ -17,7 +16,7 @@ import theme from './theme';
 import pt from './theme/passthrogh'
 import Axios from "axios";
 
-const baseURL = "/api";
+const baseURL = "/cgi-bin/api";
 
 const axios = Axios.create({ baseURL });
 

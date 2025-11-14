@@ -8,7 +8,7 @@
         <div class="flex gap-8 p-8 grow">
             <AppSidebar />
             <main class="grow">
-                <slot></slot>
+                <RouterView />
             </main>
         </div>
     </div>

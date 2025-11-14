@@ -1,19 +1,7 @@
 <script setup>
-definePageMeta({ middleware: ['auth'] })
+const { dialog, toast, router, t } = inject('services');
 
-const { data, pending: fetching, refresh, clear } = useLazyFetch('/api/cameras')
-
-const items = ref([])
-
-watch(fetching, (v) => !v && (items.value = data.value?.items || []))
-
-const dialog = useDialog()
-
-const toast = useToast()
-
-const router = useRouter()
-
-const { t } = useI18n()
+const store = useCameraStore()
 
 const menu = ref();
 const options = ref();
@@ -58,7 +46,6 @@ const toggle = (data, event) => {
     menu.value.toggle(event);
 };
 
-
 const handleRecord = async (camera) => {
 
     const { pending } = useFetch(`/api/cameras/${camera.id}/record`, {
@@ -84,13 +71,13 @@ const handleRecord = async (camera) => {
 
 <template>
     <div class="bg-white rounded p-6">
-        <DataTable :value="items">
+        <DataTable :value="store.items">
             <template #header>
-                <CameraHeader :fetching @refresh="[$event && clear(), refresh()]" />
+                <CameraHeader />
             </template>
             <template #empty>
                 <p class="text-center text-sm opacity-60">
-                    {{ fetching ? $t('loading') : $t('not-found') }}
+                    {{ store.fetching ? $t('loading') : $t('not-found') }}
                 </p>
             </template>
             <Column :header="$t('row')">

@@ -388,6 +388,10 @@ int main()
         }
     }
 
+    printf("Status: 200 OK\r\n");
+    printf("Content-Type: application/json\r\n\r\n");
+    printf("{\"ok\": true}\n");
+
     fclose(fp);
     return 0;
 }

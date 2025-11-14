@@ -1,7 +1,5 @@
 <script setup>
-const { t } = useI18n()
-const route = useRoute()
-const router = useRouter()
+const { t, route,router } = inject('services')
 
 const items = computed(() => [
     {
@@ -27,7 +25,7 @@ const items = computed(() => [
     return item;
 }));
 
-const { pending, data, refresh } = useFetch('/api/files/memory')
+// const { pending, data, refresh } = useFetch('/api/files/memory')
 
 </script>
 
