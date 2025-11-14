@@ -5,13 +5,20 @@ export const useCameraStore = defineStore('camera', {
         items: []
     }),
     actions: {
-        index() {
+        async index() {
+            this.fetching = true
 
+            const { status, data } = await this.axios.post('/cameras')
+
+            this.fetching = false
+
+            if (status === 200)
+                this.items = data.items
         },
-        scan() {
+        async scan() {
             this.scanning = true
 
-            const { status } = this.axios.post('/cameras/scan')
+            const { status } = await this.axios.post('/cameras/scan')
 
             this.scanning = false
 

@@ -2,6 +2,7 @@
 const { dialog, toast, router, t } = inject('services');
 
 const store = useCameraStore()
+// store.index()
 
 const menu = ref();
 const options = ref();

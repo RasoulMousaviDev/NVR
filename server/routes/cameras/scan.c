@@ -7,6 +7,9 @@
 #include <time.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <unistd.h>
+#include <limits.h>
+#include <string.h>
 
 #define FILE_PATH "cameras.txt"
 
@@ -243,9 +246,9 @@ void fetch_onvif(const char *ip, int port, char *man, char *model, char *fw,
 }
 
 // Ensure file exists
-void ensure_file()
+void ensure_file(char *file_path)
 {
-    FILE *fp = fopen(FILE_PATH, "a+");
+    FILE *fp = fopen(file_path, "a+");
     fclose(fp);
 }
 
@@ -273,7 +276,7 @@ int find_camera(FILE *fp, const char *ip, long *pos)
 // Set connect=0 for all cameras
 void reset_connect_flags(FILE *fp)
 {
-    FILE *tmp = fopen("tmp.txt", "w");
+    FILE *tmp = fopen("reset.txt", "w");
     char line[1024];
 
     rewind(fp);
@@ -292,7 +295,7 @@ void reset_connect_flags(FILE *fp)
 
     fclose(tmp);
     remove(FILE_PATH);
-    rename("cameras.tmp", FILE_PATH);
+    rename("reset.tmp", FILE_PATH);
 }
 
 // Add new camera
@@ -319,7 +322,7 @@ void write_camera(FILE *fp, int id, const char *ip,
 // Update connect=1 for an existing camera
 void update_connect(FILE *fp, long pos)
 {
-    FILE *tmp = fopen("tmp2.txt", "a+");
+    FILE *tmp = fopen("update.txt", "a+");
     char line[1024];
 
     rewind(fp);
@@ -346,13 +349,27 @@ void update_connect(FILE *fp, long pos)
     }
 
     fclose(tmp);
-    freopen("tmp2.txt", "r", fp);
+    remove(FILE_PATH);
+    rename("update.txt", FILE_PATH);
 }
 
 int main()
 {
-    ensure_file();
-    FILE *fp = fopen(FILE_PATH, "a+");
+    char exe_path[1024];
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len == -1)
+        return 1;
+    exe_path[len] = '\0';
+
+    char *last_slash = strrchr(exe_path, '/');
+    if (last_slash)
+        *last_slash = '\0';
+
+    char file_path[PATH_MAX];
+    snprintf(file_path, sizeof(file_path), "%s/%s", exe_path, FILE_PATH);
+
+    ensure_file(file_path);
+    FILE *fp = fopen(file_path, "a+");
 
     // reset_connect_flags(fp);
 

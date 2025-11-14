@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define BASE_PATH "../routes"
 
@@ -58,7 +61,14 @@ int main(void)
     }
     final_path[j] = '\0';
 
-    if (access(final_path, F_OK) != 0)
+    struct stat st;
+    if (stat(final_path, &st) != 0)
+    {
+        send_404();
+        return 1;
+    }
+
+    if (S_ISDIR(st.st_mode))
     {
         char index_path[1042];
         snprintf(index_path, sizeof(index_path), "%s/index", final_path);
@@ -69,9 +79,14 @@ int main(void)
         }
         strcpy(final_path, index_path);
     }
+    else if (!S_ISREG(st.st_mode) || access(final_path, X_OK) != 0)
+    {
+        send_404();
+        return 1;
+    }
 
     char cmd[2048];
-    snprintf(cmd, sizeof(cmd), "%s", final_path);
+    snprintf(cmd, sizeof(cmd), "%s 2>log.txt", final_path);
 
     FILE *fp = popen(cmd, "r");
     if (!fp)
@@ -80,7 +95,7 @@ int main(void)
         return 1;
     }
 
-    char buffer[1024];
+    char buffer[9024];
     while (fgets(buffer, sizeof(buffer), fp))
     {
         printf("%s", buffer);

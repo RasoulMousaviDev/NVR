@@ -23,3 +23,5 @@ compile_c_files() {
 }
 
 compile_c_files "."
+
+scp -O -r output/* root@192.168.1.100:/mnt/mmcblk0p1/www
