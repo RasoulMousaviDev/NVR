@@ -80,9 +80,12 @@ static int rtsp_check(const char *ip)
     close(sock);
 
     if (strstr(buf, "RTSP/1.0") || strstr(buf, "401"))
+    {
         if (strstr(buf, "audio"))
             return 2;
-    return 1; // treat 401 as valid RTSP
+        return 1;
+    }
+
     return 0;
 }
 
