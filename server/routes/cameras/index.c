@@ -49,6 +49,16 @@ void escape_json(const char *src, char *dst)
 
 int main()
 {
+    char *method = getenv("REQUEST_METHOD");
+
+    if (strcmp(method, "GET") != 0)
+    {
+        printf("Status: 405 Method Not Allowed\r\n");
+        printf("Content-Type: text/plain\r\n\r\n");
+        printf("Method Not Allowed\n");
+        return 1;
+    }
+
     printf("Status: 200 OK\r\n");
     printf("Content-Type: application/json\r\n\r\n");
 

@@ -22,7 +22,8 @@ export const useCameraStore = defineStore('camera', {
 
             this.scanning = false
 
-            return status;
+            if (status === 200)
+                this.index()
         }
     }
 

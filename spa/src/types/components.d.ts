@@ -22,6 +22,7 @@ declare module 'vue' {
     Column: typeof import('primevue/column')['default']
     DataTable: typeof import('primevue/datatable')['default']
     InputSwitch: typeof import('primevue/inputswitch')['default']
+    InputText: typeof import('primevue/inputtext')['default']
     Knob: typeof import('primevue/knob')['default']
     LogHeader: typeof import('./../components/Log/Header.vue')['default']
     Menu: typeof import('primevue/menu')['default']

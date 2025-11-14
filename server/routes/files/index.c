@@ -1,8 +1,91 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/stat.h>
 
-int main() {
-    printf("Content-type: application/json\r\n\r\n");
-    printf("{\"status\": \"OK\", \"message\": \"API is running on OpenIPC\"}");
+#define BASE_PATH "/mnt/mmcblk0p1/videos"
+
+void sanitize_path(char *path)
+{
+    char *p;
+    while ((p = strstr(path, "..")) != NULL)
+    {
+        memmove(p, p + 2, strlen(p + 2) + 1);
+    }
+}
+
+void append_json_entry(char *json, const char *name, const char *type, int *first)
+{
+    if (!(*first))
+        strcat(json, ",");
+    strcat(json, "{\"name\":\"");
+    strcat(json, name);
+    strcat(json, "\",\"type\":\"");
+    strcat(json, type);
+    strcat(json, "\"}");
+    *first = 0;
+}
+
+void list_dir(const char *path, char *json, int *first)
+{
+    DIR *dir = opendir(path);
+    if (!dir)
+        return;
+
+    struct dirent *entry;
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (entry->d_name[0] == '.')
+            continue;
+
+        char full_path[1024];
+        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+
+        struct stat st;
+        if (stat(full_path, &st) == -1)
+            continue;
+
+        const char *type = S_ISDIR(st.st_mode) ? "folder" : "file";
+        append_json_entry(json, entry->d_name, type, first);
+    }
+    closedir(dir);
+}
+
+int main()
+{
+    printf("Content-Type: application/json\r\n\r\n");
+
+    char *query = getenv("QUERY_STRING");
+    char path_to_list[1024];
+    strcpy(path_to_list, BASE_PATH);
+
+    if (query)
+    {
+        char query_copy[1024];
+        strcpy(query_copy, query);
+
+        char *token = strtok(query_copy, "&");
+        while (token)
+        {
+            if (strncmp(token, "direction[]=", 12) == 0)
+            {
+                char val[256];
+                strcpy(val, token + 12);
+                sanitize_path(val);
+                strcat(path_to_list, "/");
+                strcat(path_to_list, val);
+            }
+            token = strtok(NULL, "&");
+        }
+    }
+
+    char json[8192];
+    strcpy(json, "[");
+    int first = 1;
+    list_dir(path_to_list, json, &first);
+    strcat(json, "]");
+
+    printf("%s\n", json);
     return 0;
 }

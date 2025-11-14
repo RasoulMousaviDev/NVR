@@ -355,6 +355,16 @@ void update_connect(FILE *fp, long pos)
 
 int main()
 {
+    char *method = getenv("REQUEST_METHOD");
+
+    if (strcmp(method, "POST") != 0)
+    {
+        printf("Status: 405 Method Not Allowed\r\n");
+        printf("Content-Type: text/plain\r\n\r\n");
+        printf("Method Not Allowed\n");
+        return 1;
+    }
+
     char exe_path[1024];
     ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
     if (len == -1)

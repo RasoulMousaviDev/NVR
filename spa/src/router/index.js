@@ -15,6 +15,11 @@ const router = createRouter({
             component: () => import("@/layouts/Default.vue"),
             children: [
                 {
+                    name: "Videos",
+                    path: "/videos",
+                    component: import('@/views/Videos.vue')
+                },
+                {
                     name: "Cameras",
                     path: "/cameras",
                     component: import('@/views/Cameras.vue')
