@@ -7,7 +7,7 @@ const store = useCameraStore()
 
 const data = dialog.value.data
 
-const form = reactive({ username: '', password: '' })
+const form = reactive({ username: 'admin', password: 'admin' })
 
 const readonly = ref(true)
 

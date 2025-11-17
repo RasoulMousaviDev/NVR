@@ -1,0 +1,3 @@
+export SD_CARD_PATH=/mnt/mmcblk0p1
+export PATH=$PATH:$SD_CARD_PATH/bin
+httpd -p 3000 -h $SD_CARD_PATH/www -c $SD_CARD_PATH/www/cgi-bin/ &

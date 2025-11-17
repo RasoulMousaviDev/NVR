@@ -43,7 +43,7 @@ export default defineConfig({
     server: {
         proxy: {
             "/cgi-bin/api": {
-                target: 'http://192.168.1.100:8080',
+                target: 'http://192.168.1.100:3000',
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/cgi-bin\/api/, "/cgi-bin/api"),
