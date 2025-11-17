@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #define BASE_PATH "../routes"
 
@@ -24,45 +25,66 @@ void send_500()
 
 int main(void)
 {
-    char *query = getenv("REQUEST_URI");
-    if (!query)
+    char *uri = getenv("REQUEST_URI");
+    if (!uri)
     {
         send_500();
         return 1;
     }
 
-    if (strncmp(query, "/cgi-bin/api", 12) != 0)
+    if (strncmp(uri, "/cgi-bin/api", 12) != 0)
     {
         send_404();
         return 1;
     }
 
-    char path[1024];
-    snprintf(path, sizeof(path), "%s%s", BASE_PATH, query + 12);
+    char arguments[32];
+    char path[1023];
+    snprintf(path, sizeof(path), "%s", BASE_PATH);
 
-    char final_path[1024];
-    int i = 0, j = 0;
-    while (path[i])
+    char *token = strtok(uri + 12, "/");
+
+    while (token != NULL)
     {
-        if (path[i] == ':')
+        char newpath[1279];
+
+        char fullpath[1024];
+        snprintf(fullpath, sizeof(fullpath), "%s/%s", path, token);
+        struct stat st;
+        if (stat(fullpath, &st) == 0)
         {
-            final_path[j++] = '[';
-            i++;
-            while (path[i] && path[i] != '/')
-            {
-                final_path[j++] = path[i++];
-            }
-            final_path[j++] = ']';
+            snprintf(newpath, sizeof(newpath), "%s/%s", path, token);
+            strncpy(path, newpath, sizeof(path) - 1);
+            path[sizeof(path) - 1] = '\0';
         }
         else
         {
-            final_path[j++] = path[i++];
+            DIR *d = opendir(path);
+            if (d)
+            {
+                struct dirent *entry;
+                while ((entry = readdir(d)) != NULL)
+                {
+                    char *s = entry->d_name;
+                    size_t len = strlen(s);
+                    if (len >= 2 && s[0] == '[' && s[len - 1] == ']')
+                    {
+                        snprintf(newpath, sizeof(newpath), "%s/%s", path, entry->d_name);
+                        strncpy(path, newpath, sizeof(path) - 1);
+                        path[sizeof(path) - 1] = '\0';
+
+                        snprintf(arguments, sizeof(arguments), "%s ", token);
+                        break;
+                    }
+                }
+                closedir(d);
+            }
         }
+        token = strtok(NULL, "/");
     }
-    final_path[j] = '\0';
 
     struct stat st;
-    if (stat(final_path, &st) != 0)
+    if (stat(path, &st) != 0)
     {
         send_404();
         return 1;
@@ -71,22 +93,22 @@ int main(void)
     if (S_ISDIR(st.st_mode))
     {
         char index_path[1042];
-        snprintf(index_path, sizeof(index_path), "%s/index", final_path);
+        snprintf(index_path, sizeof(index_path), "%s/index", path);
         if (access(index_path, X_OK) != 0)
         {
             send_404();
             return 1;
         }
-        strcpy(final_path, index_path);
+        strcpy(path, index_path);
     }
-    else if (!S_ISREG(st.st_mode) || access(final_path, X_OK) != 0)
+    else if (!S_ISREG(st.st_mode) || access(path, X_OK) != 0)
     {
         send_404();
         return 1;
     }
 
     char cmd[2048];
-    snprintf(cmd, sizeof(cmd), "%s 2>log.txt", final_path);
+    snprintf(cmd, sizeof(cmd), "%s %s", path, arguments);
 
     FILE *fp = popen(cmd, "r");
     if (!fp)

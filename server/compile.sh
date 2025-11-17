@@ -16,7 +16,10 @@ compile_c_files() {
             subdir="$OUTPUT_DIR/$(dirname "$rel_path")"
             mkdir -p "$subdir"
             exe_name=$(basename "$item" .c)
-            arm-linux-gnueabihf-gcc "$item" -o "$subdir/$exe_name" -static
+            armv7-linux-musleabihf-gcc "$item" -o "$subdir/$exe_name" \
+                -I/usr/armv7-linux-musleabihf/include \
+                -L/usr/armv7-linux-musleabihf/lib \
+                -lcurl -lssl -lcrypto -static
             echo "Compiled $item -> $subdir/$exe_name"
         fi
     done

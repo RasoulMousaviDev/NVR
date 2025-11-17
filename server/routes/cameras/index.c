@@ -6,6 +6,7 @@
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #define MAX_LINE 2048
 #define MAX_KV 128
@@ -50,13 +51,10 @@ void escape_json(const char *src, char *dst)
 int main()
 {
     char *method = getenv("REQUEST_METHOD");
-
-    if (strcmp(method, "GET") != 0)
+    if (!method || strcmp(method, "GET") != 0)
     {
-        printf("Status: 405 Method Not Allowed\r\n");
-        printf("Content-Type: text/plain\r\n\r\n");
-        printf("Method Not Allowed\n");
-        return 1;
+        printf("Status: 405 Method Not Allowed\r\n\r\n");
+        return 0;
     }
 
     printf("Status: 200 OK\r\n");
@@ -75,9 +73,13 @@ int main()
     char file_path[PATH_MAX];
     snprintf(file_path, sizeof(file_path), "%s/%s", exe_path, FILE_PATH);
 
+    const char *ignored_keys[] = {"username", "password", NULL};
+
     FILE *fp = fopen(file_path, "r");
-    if (!fp)
+    if (!fp){
+        printf("{\"items\": []}");
         return 1;
+    }
     char line[MAX_LINE];
     printf("{\"items\": [");
     int first_line = 1;
@@ -104,8 +106,49 @@ int main()
             *eq = 0;
             char key[1024], value[2048];
             escape_json(kv_list[i], key);
+
+            int skip = 0;
+            for (int k = 0; ignored_keys[k] != NULL; k++)
+            {
+                if (strcmp(key, ignored_keys[k]) == 0)
+                {
+                    skip = 1;
+                    break;
+                }
+            }
+            if (skip)
+                continue;
+
             escape_json(eq + 1, value);
-            printf("\"%s\":\"%s\"", key, value);
+
+            int is_number = 1;
+            int dot_count = 0;
+
+            if (strlen(value) > 1 && value[0] == '0')
+                is_number = 0;
+
+            for (char *p = value; *p; p++)
+            {
+                if (*p == '.')
+                {
+                    dot_count++;
+                    if (dot_count > 1)
+                    {
+                        is_number = 0;
+                        break;
+                    }
+                }
+                else if (!isdigit(*p) && *p != '-' && *p != '+')
+                {
+                    is_number = 0;
+                    break;
+                }
+            }
+            if (is_number)
+                printf("\"%s\":%s", key, value);
+            else
+                printf("\"%s\":\"%s\"", key, value);
+
             if (i != kv_count - 1)
                 printf(",");
         }

@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <string.h>
+#include <sys/time.h>
 
 #define FILE_PATH "cameras.txt"
 
@@ -118,51 +119,6 @@ void extract_tag(const char *xml, const char *tag, char *out, int outsz)
 
     strncpy(out, start, len);
     out[len] = 0;
-}
-
-int http_post(const char *ip, const char *body, char *response, int maxlen)
-{
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0)
-        return -1;
-
-    struct sockaddr_in addr = {0};
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(80);
-    inet_pton(AF_INET, ip, &addr.sin_addr);
-
-    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-    {
-        close(sock);
-        return -1;
-    }
-
-    char req[2048];
-    snprintf(req, sizeof(req),
-             "POST /onvif/device_service HTTP/1.1\r\n"
-             "Host: %s\r\n"
-             "Content-Type: application/soap+xml; charset=utf-8\r\n"
-             "Content-Length: %d\r\n"
-             "Connection: close\r\n\r\n"
-             "%s",
-             ip, strlen(body), body);
-
-    send(sock, req, strlen(req), 0);
-
-    int total = 0;
-    while (1)
-    {
-        int r = recv(sock, response + total, maxlen - total - 1, 0);
-        if (r <= 0)
-            break;
-        total += r;
-        if (total >= maxlen - 1)
-            break;
-    }
-
-    response[total] = 0;
-    close(sock);
-    return total;
 }
 
 int http_post_port(const char *ip, int port, const char *body, char *response, int maxlen)
@@ -276,26 +232,42 @@ int find_camera(FILE *fp, const char *ip, long *pos)
 // Set connect=0 for all cameras
 void reset_connect_flags(FILE *fp)
 {
-    FILE *tmp = fopen("reset.txt", "w");
+    char buffer[10000] = {0};
     char line[1024];
+    size_t total = 0;
 
     rewind(fp);
+
     while (fgets(line, sizeof(line), fp))
     {
         char *p = strstr(line, "connect=");
         if (p)
         {
             char *amp = strchr(p, '&');
+
             if (amp)
-                *amp = '\0';
-            sprintf(p, "connect=0%s", amp ? amp + 1 : "");
+            {
+                size_t tail_len = strlen(amp);
+                memmove(p + 9, amp, tail_len + 1);
+                memcpy(p, "connect=0", 9);
+            }
+            else
+            {
+                memcpy(p, "connect=0", 9);
+                p[9] = '\0';
+            }
         }
-        fputs(line, tmp);
+
+        strncat(buffer, line, sizeof(buffer) - strlen(buffer) - 1);
     }
 
-    fclose(tmp);
-    remove(FILE_PATH);
-    rename("reset.tmp", FILE_PATH);
+    rewind(fp);
+    ftruncate(fileno(fp), 0);
+    fseek(fp, 0, SEEK_SET);
+
+    fputs(buffer, fp);
+
+    fflush(fp);
 }
 
 // Add new camera
@@ -309,7 +281,7 @@ void write_camera(FILE *fp, int id, const char *ip,
     sprintf(line,
             "id=%d&ip=%s&manufacturer=%s&model=%s&firmware_version=%s&serial_number=%s&hardware_id=%s"
             "&username=&password=&record=0&audio=%d&image_quality=medium&audio_quality=%s&duration=60"
-            "&connect=1",
+            "&connect=1\n",
             id,
             ip, man, model, fw, sn, hw, audio,
             audio ? "medium" : "off");
@@ -322,8 +294,9 @@ void write_camera(FILE *fp, int id, const char *ip,
 // Update connect=1 for an existing camera
 void update_connect(FILE *fp, long pos)
 {
-    FILE *tmp = fopen("update.txt", "a+");
+    char buffer[10000] = {0};
     char line[1024];
+    size_t total = 0;
 
     rewind(fp);
     long cur = 0;
@@ -339,30 +312,38 @@ void update_connect(FILE *fp, long pos)
             if (p)
             {
                 char *amp = strchr(p, '&');
+
                 if (amp)
-                    *amp = '\0';
-                sprintf(p, "connect=1%s", amp ? amp + 1 : "");
+                {
+                    size_t tail_len = strlen(amp);
+                    memmove(p + 9, amp, tail_len + 1);
+                    memcpy(p, "connect=1", 9);
+                }
+                else
+                {
+                    memcpy(p, "connect=1", 9);
+                    p[9] = '\0';
+                }
             }
         }
 
-        fputs(line, tmp);
+        strncat(buffer, line, sizeof(buffer) - strlen(buffer) - 1);
     }
-
-    fclose(tmp);
-    remove(FILE_PATH);
-    rename("update.txt", FILE_PATH);
+    
+    rewind(fp);
+    ftruncate(fileno(fp), 0);
+    fseek(fp, 0, SEEK_SET);
+    fputs(buffer, fp);
+    fflush(fp);
 }
 
 int main()
 {
     char *method = getenv("REQUEST_METHOD");
-
-    if (strcmp(method, "POST") != 0)
+    if (!method || strcmp(method, "POST") != 0)
     {
-        printf("Status: 405 Method Not Allowed\r\n");
-        printf("Content-Type: text/plain\r\n\r\n");
-        printf("Method Not Allowed\n");
-        return 1;
+        printf("Status: 405 Method Not Allowed\r\n\r\n");
+        return 0;
     }
 
     char exe_path[1024];
@@ -381,7 +362,7 @@ int main()
     ensure_file(file_path);
     FILE *fp = fopen(file_path, "a+");
 
-    // reset_connect_flags(fp);
+    reset_connect_flags(fp);
 
     char buffer[4096];
     int size = 5;
