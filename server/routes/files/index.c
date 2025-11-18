@@ -4,7 +4,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#define BASE_PATH "/mnt/mmcblk0p1/videos"
+#define BASE_PATH "/mnt/mmcblk0p1/videos/"
 
 void sanitize_path(char *path)
 {
@@ -54,31 +54,24 @@ void list_dir(const char *path, char *json, int *first)
 
 int main()
 {
-    printf("Content-Type: application/json\r\n\r\n");
-
     char *query = getenv("QUERY_STRING");
     char path_to_list[1024];
     strcpy(path_to_list, BASE_PATH);
 
-    if (query)
+    if (query && strlen(query) > 10)
     {
-        char query_copy[1024];
-        strcpy(query_copy, query);
-
-        char *token = strtok(query_copy, "&");
-        while (token)
+        for (int i = 0; query[i] != '\0'; i++)
         {
-            if (strncmp(token, "direction[]=", 12) == 0)
+            if (query[i] == ',')
             {
-                char val[256];
-                strcpy(val, token + 12);
-                sanitize_path(val);
-                strcat(path_to_list, "/");
-                strcat(path_to_list, val);
+                query[i] = '/';
             }
-            token = strtok(NULL, "&");
         }
+        strcat(path_to_list, query + 10);
+        strcat(path_to_list, "/");
     }
+    printf("Test: %s\r\n", path_to_list);
+    printf("Content-Type: application/json\r\n\r\n");
 
     char json[8192];
     strcpy(json, "[");

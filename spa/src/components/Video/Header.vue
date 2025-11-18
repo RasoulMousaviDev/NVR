@@ -17,7 +17,7 @@ watch(() => direction.value.length, (v, o) => {
         <span class="text-2xl font-bold pl-4">{{ $t('videos') }}</span>
         <InputText class="grow ltr" readonly :value="['cameras', ...direction].join('/')" />
         <Button icon="pi pi-refresh" rounded text severity="secondary" :loading="store.fetching"
-            @click="store.index(direction)" />
+            @click="store.index(direction.join())" />
         <Button icon="pi pi-chevron-right" text rounded severity="secondary" :disabled="history.length < 1 || fetching"
             @click="direction.push(history.pop())" />
         <Button icon="pi pi-chevron-left" text rounded severity="secondary" :disabled="direction.length == 0 || fetching"

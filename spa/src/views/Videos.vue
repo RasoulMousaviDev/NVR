@@ -8,7 +8,7 @@ const direction = ref([])
 if (route.query.camera)
     direction.value.push(route.query.camera)
 
-watch(direction, (v) => store.index(v), { immediate: true, deep: true })
+watch(direction, (v) => store.index(v.join()), { immediate: true, deep: true })
 
 const VideoPlay = defineAsyncComponent(() => import('@/components/Video/Play.vue'))
 

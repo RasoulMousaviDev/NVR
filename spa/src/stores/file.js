@@ -7,9 +7,11 @@ export const useFileStore = defineStore('file', {
     }),
     actions: {
         async index(direction) {
+            const params = { direction: direction || undefined }
+            
             this.fetching = true
 
-            const { status, data } = await this.axios.get('/files', { params: { direction } })
+            const { status, data } = await this.axios.get('/files', { params })
 
             this.fetching = false
 

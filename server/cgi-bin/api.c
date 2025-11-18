@@ -43,6 +43,12 @@ int main(void)
     char path[1023];
     snprintf(path, sizeof(path), "%s", BASE_PATH);
 
+    char *query_start = strchr(uri, '?');
+    if (query_start != NULL)
+    {
+        *query_start = '\0';
+    }
+
     char *token = strtok(uri + 12, "/");
 
     while (token != NULL)

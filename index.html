@@ -6,23 +6,11 @@
     </head>
     <body>
         <h2>فید زنده دوربین</h2>
-        <img
+        <video
             id="cameraFeed"
-            src="http://192.168.1.100:3000/output.jpg"
+            src="http://192.168.1.100/cgi-bin/api/files/2025-08-17_01-08-55/play"
             alt="تصویر دوربین"
         />
 
-        <script>
-            const imageUrl = "http://192.168.1.100:3000/output.jpg";
-            const imageElement = document.getElementById("cameraFeed");
-            const refreshRate = 1000;
-
-            function refreshImage() {
-                imageElement.src = imageUrl + "?" + new Date().getTime();
-            }
-
-            refreshImage();
-            setInterval(refreshImage, refreshRate);
-        </script>
     </body>
 </html>

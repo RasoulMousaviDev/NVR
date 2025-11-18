@@ -3,7 +3,7 @@ const dialog = inject('dialogRef')
 
 const { file, direction } = dialog.value.data
 
-const url = `/api/files/play/${direction.join('/')}/${file.name}`
+const url = `http://192.168.1.100:3000/cgi-bin/api/files/${direction.join('-')}-${file.name.slice(0, 5)}/play`
 </script>
 
 <template>
