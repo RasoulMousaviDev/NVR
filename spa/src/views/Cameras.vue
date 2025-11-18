@@ -23,14 +23,14 @@ const toggle = (data, event) => {
         {
             label: t('live-stream'), icon: 'pi pi-play-circle', disabled,
             command: async () => {
-                const url = `/api/cameras/${data.id}/stream?t=${Date.now()}`
+                const url = `/cgi-bin/api/cameras/${data.id}/stream`
 
-                const { status, error } = await useFetch(url)
+                // const { status, error } = await useFetch(url)
 
-                if (status.value == 'success')
+                // if (status.value == 'success')
                     return dialog.open(CameraStream, { props, data: { url } })
 
-                toast.add({ severity: 'error', summary: 'Error', detail: error.value.data.message, life: 3000 })
+                // toast.add({ severity: 'error', summary: 'Error', detail: error.value.data.message, life: 3000 })
 
             }
         },

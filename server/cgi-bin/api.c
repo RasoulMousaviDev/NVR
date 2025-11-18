@@ -25,6 +25,7 @@ void send_500()
 
 int main(void)
 {
+    printf("Access-Control-Allow-Origin: *\r\n");
     char *uri = getenv("REQUEST_URI");
     if (!uri)
     {

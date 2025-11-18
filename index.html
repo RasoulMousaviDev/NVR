@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fa">
+    <head>
+        <title>GSI CGI Stream</title>
+        <script src="https://cdn.jsdelivr.net/npm/mpegts.js@1.7.3/dist/mpegts.min.js"></script>
+    </head>
+    <body>
+        <h1>پخش استریم RTSP کم‌مصرف</h1>
+
+        <video
+            id="videoElement"
+            width="800"
+            height="600"
+            controls
+            autoplay
+        ></video>
+
+        <script>
+            const cgiStreamUrl =
+                "http://192.168.1.100:3000/cgi-bin/api/cameras/1/stream";
+
+            if (mpegts.isSupported()) {
+                const videoElement = document.getElementById("videoElement");
+                const player = mpegts.createPlayer({
+                    type: "flv",
+                    url: cgiStreamUrl,
+                    isLive: true,
+                    isFragmented: false, // این جریان، قطعه‌بندی شده (Segmented) نیست
+                    autoCleanupSourceBuffer: true, // همیشه بافر را تمیز کن
+
+                    // پارامترهای بازیابی جریان زنده
+                    liveBufferLatency: 1.5,
+                    liveBufferMaxLatency: 2.5,
+                });
+
+                player.attachMediaElement(videoElement);
+
+                player.load();
+                // player.play().catch(error => {
+                //     console.error("Autoplay failed:", error);
+
+                // });
+
+                player.on(mpegts.Events.ERROR, (errorType, errorDetail) => {
+                    console.error("MPEGTS Error:", errorType, errorDetail);
+                    player.unload();
+                    player.load();
+                    // player.play();
+                });
+            } else {
+                alert(
+                    "مرورگر شما از Media Source Extensions برای پخش استریم پشتیبانی نمی‌کند."
+                );
+            }
+        </script>
+    </body>
+</html>
