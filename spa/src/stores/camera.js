@@ -29,7 +29,7 @@ export const useCameraStore = defineStore('camera', {
         },
         async settings(id, form) {
             this.loading = true
-            
+
             const data = new URLSearchParams(form)
             const { status } = await this.axios.post(`/cameras/${id}/settings`, data)
 
@@ -42,6 +42,15 @@ export const useCameraStore = defineStore('camera', {
 
             const data = new URLSearchParams(form)
             const { status } = await this.axios.post(`/cameras/${id}/credentials`, data)
+
+            this.loading = false
+
+            return status;
+        },
+        async record(id, value) {
+            this.loading = true
+
+            const { status } = await this.axios[value ? 'post' : 'delete'](`/cameras/${id}/record`, {})
 
             this.loading = false
 

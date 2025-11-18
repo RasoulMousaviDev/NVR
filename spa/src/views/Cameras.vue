@@ -25,13 +25,7 @@ const toggle = (data, event) => {
             command: async () => {
                 const url = `/cgi-bin/api/cameras/${data.id}/stream`
 
-                // const { status, error } = await useFetch(url)
-
-                // if (status.value == 'success')
-                    return dialog.open(CameraStream, { props, data: { url } })
-
-                // toast.add({ severity: 'error', summary: 'Error', detail: error.value.data.message, life: 3000 })
-
+                return dialog.open(CameraStream, { props, data: { url } })
             }
         },
         {
@@ -49,24 +43,7 @@ const toggle = (data, event) => {
 
 const handleRecord = async (camera) => {
 
-    const { pending } = useFetch(`/api/cameras/${camera.id}/record`, {
-        method: 'POST',
-        body: { record: +camera.record },
-        onResponse({ response }) {
-            if (response.ok)
-                camera.record = response._data.record;
-
-        },
-        onResponseError({ response }) {
-            setTimeout(() => {
-                camera.record = 0
-                toast.add({ severity: 'error', summary: 'Error', detail: response._data.message, life: 3000 })
-            }, 500);
-        },
-        key: Date.now().toString()
-    })
-
-    camera.updating = pending
+    const status  = await store.record(camera.id, camera.record)
 }
 </script>
 
