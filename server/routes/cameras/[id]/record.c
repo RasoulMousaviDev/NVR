@@ -9,7 +9,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#define PID_FILE "/mnt/mmcblk0p1/recorder.pid"
+#define HEX_KEY "ae9bf5e7dd27de785c549d411aa79b15"
+#define PID_FILE "/mnt/mmcblk0p1/record.pid"
 #define KEY_FILE "/mnt/mmcblk0p1/keys/enc.key"
 #define KEY_INFO_FILE "/mnt/mmcblk0p1/keys/enc.keyinfo"
 
@@ -58,27 +59,41 @@ int start_recording()
         return 0;
     }
 
-    const char *key_info = KEY_INFO_FILE;
     const char *rtsp_url = "rtsp://admin:admin@192.168.1.239:554/stream";
     const char *video_path = "/mnt/mmcblk0p1/videos";
-    const char *filename = "%Y/%m/%d/%H/%m-%S.ts";
-    const char *dummy_m3u8 = "/mnt/mmcblk0p1/keys/dummy.m3u8";
+    const char *filename = "%Y-%m-%d-%H-%m-%S.mp4";
     const char *log_path = "/mnt/mmcblk0p1/ffmpeg_output.log";
 
     const char *cmd_template =
-        "(/mnt/mmcblk0p1/bin/ffmpeg -loglevel error -rtsp_transport tcp -i %s -c copy -map 0 -f hls -hls_time 10 -hls_list_size 0 -strftime 1 -strftime_mkdir 1 "
-        "-hls_key_info_file %s -hls_segment_filename %s/%s %s > %s 2>&1 & echo $! > " PID_FILE " ) &";
+        "(/mnt/mmcblk0p1/bin/ffmpeg -loglevel error "
+        "-rtsp_transport tcp "
+        "-i %s "
+        "-c copy "
+        "-map 0 "
+        "-f segment "
+        "-segment_time 10 "
+        "-reset_timestamps 1 "
+        "-strftime 1 "
+        "-segment_format mp4 "
+        "-segment_format_options movflags=+frag_keyframe+empty_moov "
+        "-segment_list /mnt/mmcblk0p1/segment_list.txt "
+        "-segment_list_type flat "
+        "%s/%s "
+        "> %s 2>&1 & "
+        "FFMPEG_PID=$! ; "
+        "/mnt/mmcblk0p1/www/bin/encrypt /mnt/mmcblk0p1/segment_list.txt %s $FFMPEG_PID & "
+        "echo $FFMPEG_PID > " PID_FILE " ) &";
+
     char FFMPEG_DAEMON_CMD[2048];
 
     snprintf(FFMPEG_DAEMON_CMD, sizeof(FFMPEG_DAEMON_CMD),
              cmd_template,
              rtsp_url,
-             key_info,
              video_path,
              filename,
-             dummy_m3u8,
-             log_path);
-    printf("%s", FFMPEG_DAEMON_CMD);
+             log_path,
+            HEX_KEY
+            );
 
     if (system(FFMPEG_DAEMON_CMD) == -1)
     {
