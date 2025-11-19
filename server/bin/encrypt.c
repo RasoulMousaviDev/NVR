@@ -17,18 +17,6 @@
 #define ENC_SUFFIX ".enc"
 #define LOG_FILE "/mnt/mmcblk0p1/monitor_log.txt"
 #define VIDEO_BASE_PATH "/mnt/mmcblk0p1/videos"
-#define AES_KEY_LEN 16
-#define AES_IV_LEN 16
-
-extern void AES128_CBC_encrypt_buffer(uint8_t *output, uint8_t *input, size_t length, const uint8_t *key, const uint8_t *iv);
-
-void hex_to_bin(const char *hex_str, unsigned char *bin_buf, size_t len)
-{
-    for (size_t i = 0; i < len; i++)
-    {
-        sscanf(hex_str + 2 * i, "%2hhx", &bin_buf[i]);
-    }
-}
 
 void create_parent_dir(const char *path)
 {
@@ -49,59 +37,53 @@ void create_parent_dir(const char *path)
 
 int aes_encrypt_file(const char *input_path, const char *key_hex)
 {
-    unsigned char key[AES_KEY_LEN];
-    unsigned char iv[AES_IV_LEN] = {0};
     char output_path[512];
     char relative_filename[256];
     const char *filename_ptr;
+    char openssl_cmd[2048];
+    const char *IV_HEX = "00000000000000000000000000000000";
 
     filename_ptr = strrchr(input_path, '/');
     if (filename_ptr == NULL)
         return -1;
     filename_ptr++;
-    strncpy(relative_filename, filename_ptr, sizeof(relative_filename) - 4);
-    relative_filename[sizeof(relative_filename) - 1] = '\0';
+    strncpy(relative_filename, filename_ptr, sizeof(relative_filename) - 1);
 
     int Y, M, D, h, m, s;
-
     if (sscanf(relative_filename, "%4d-%2d-%2d-%2d-%2d-%2d", &Y, &M, &D, &h, &m, &s) != 6)
+    {
         return -1;
+    }
 
     snprintf(output_path, sizeof(output_path),
              "%s/%04d/%02d/%02d/%02d/%02d-%02d%s",
              VIDEO_BASE_PATH, Y, M, D, h, m, s, ENC_SUFFIX);
 
-    hex_to_bin(key_hex, key, AES_KEY_LEN);
-
     create_parent_dir(output_path);
 
-    FILE *in = fopen(input_path, "rb");
-    FILE *out = fopen(output_path, "wb");
+    snprintf(openssl_cmd, sizeof(openssl_cmd),
+             "/mnt/mmcblk0p1/bin/openssl enc -aes-256-cbc -e "
+             "-in \"%s\" "
+             "-out \"%s\" "
+             "-K %s "
+             "-iv %s",
+             input_path,
+             output_path,
+             key_hex,
+             IV_HEX);
 
-    if (in && out)
+    int status = system(openssl_cmd);
+
+    if (status == 0)
     {
-        unsigned char buffer[CHUNK_SIZE];
-        unsigned char enc_buffer[CHUNK_SIZE];
-        size_t bytes_read;
-
-        while ((bytes_read = fread(buffer, 1, CHUNK_SIZE, in)) > 0)
-        {
-
-            memcpy(enc_buffer, buffer, bytes_read);
-
-            fwrite(enc_buffer, 1, bytes_read, out);
-        }
-
-        fclose(in);
-        fclose(out);
         remove(input_path);
         return 0;
     }
-    if (in)
-        fclose(in);
-    if (out)
-        fclose(out);
-    return -1;
+    else
+    {
+        remove(output_path);
+        return -1;
+    }
 }
 
 int process_directory(const char *dir_name, const char *key_hex)

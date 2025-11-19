@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#define HEX_KEY "ae9bf5e7dd27de785c549d411aa79b15"
+#define HEX_KEY "2cc4c6c797ead8baf874a4bf14ab04d0c9c2a43d1b629011375fc98f0c1e4ae3"
 #define PID_FILE "/mnt/mmcblk0p1/record.pid"
 #define KEY_FILE "/mnt/mmcblk0p1/keys/enc.key"
 #define KEY_INFO_FILE "/mnt/mmcblk0p1/keys/enc.keyinfo"
@@ -71,7 +71,7 @@ int start_recording()
         "-c copy "
         "-map 0 "
         "-f segment "
-        "-segment_time 10 "
+        "-segment_time 4 "
         "-reset_timestamps 1 "
         "-strftime 1 "
         "-segment_format mp4 "

@@ -1,11 +1,1 @@
-export SD_CARD_PATH=/mnt/mmcblk0p1
-export PATH=$PATH:$SD_CARD_PATH/bin
-httpd -p 3000 -h $SD_CARD_PATH/www -c $SD_CARD_PATH/www/cgi-bin/ &
 
-ffmpeg -hide_banner -loglevel error -fflags nobuffer -flags low_delay -rtsp_transport tcp -i \"rtsp://admin:admin@192.168.1.100:554/stream\" -f mjpeg -q:v 3 -r 15 -",
-
- /mnt/mmcblk0p1/bin/ffmpeg -hide_banner -loglevel error -rtsp_transport tcp  -i "rtsp://admin:admin@192.168.1.239:554/stream" -frames:v 1 -f image2 -
-
-
-
- ffmpeg -loglevel error -rtsp_transport tcp -i rtsp://admin:admin@192.168.1.239:554/stream -c copy -map 0 -f hls -hls_time 60 -hls_list_size 0 -hls_key_info_file /mnt/mmcblk0p1/keys/enc.keyinfo -hls_segment_filename /mnt/mmcblk0p1/videos/%Y/%m/%d/%H/%m-%S.ts /mnt/mmcblk0p1/keys/dummy.m3u8

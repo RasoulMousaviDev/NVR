@@ -1,16 +1,28 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
-    <head>
-        <meta charset="UTF-8" />
-        <title>Stream Viewer</title>
-    </head>
-    <body>
-        <h2>فید زنده دوربین</h2>
-        <video
-            id="cameraFeed"
-            src="http://192.168.1.100/cgi-bin/api/files/2025-08-17_01-08-55/play"
-            alt="تصویر دوربین"
-        />
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HLS Stream</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+</head>
+<body>
+    <video id="video" width="640" height="360" controls></video>
 
-    </body>
+    <script>
+        var video = document.getElementById('video');
+
+        if (Hls.isSupported()) {
+            var hls = new Hls();
+            hls.loadSource('http://192.168.1.100:3000/stream.m3u8');
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                console.log('HLS Manifest parsed');
+            });
+        }
+        else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+            video.src = 'http://192.168.1.100/stream.m3u8';
+        }
+    </script>
+</body>
 </html>

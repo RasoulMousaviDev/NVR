@@ -1,66 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/types.h> // برای تعریف pid_t
-#include <unistd.h>    // برای توابع fork() و exec()
-#include <sys/wait.h>
+#include <signal.h>
+#include <sys/types.h>
 
-#define RTSP_URL "rtsp://admin:admin@192.168.1.239:554/stream"
-// مسیر قابل دسترسی عمومی برای فایل خروجی
-#define OUTPUT_FILE "web_snapshot.jpg" 
-// آدرس URL برای فایل خروجی (همان آدرسی که مرورگر استفاده می کند)
-#define IMAGE_URL "/web_snapshot.jpg" 
-#define FFMPEG_PATH "ffmpeg" // اگر FFmpeg در path سیستم نباشد، مسیر کامل را اینجا قرار دهید
+volatile sig_atomic_t run = 1;
 
-int main() {
-    // 1. هدرهای HTTP برای بازگرداندن متن ساده (آدرس فایل)
-    printf("Content-Type: text/plain\r\n");
-    printf("Cache-Control: no-cache, no-store, must-revalidate\r\n");
-    printf("\r\n");
+void stop(int sig)
+{
+    run = 0;
+}
 
-    // 2. آماده سازی آرگومان های FFmpeg
-    char *ffmpeg_args[] = {
-        FFMPEG_PATH,
-        "-y", // اجبار به بازنویسی فایل خروجی
-        "-i",
-        RTSP_URL,
-        "-f", "image2",
-        "-vframes", "1",
-        "-q:v", "30",
-        "-s", "320x240",
-        "-nostats",
-        "-loglevel", "quiet",
-        "-c:v", "mjpeg",
-        OUTPUT_FILE,
-        NULL
-    };
-    
-    
-    pid_t pid = fork();
+int main()
+{
+    signal(SIGPIPE, stop);
+    signal(SIGTERM, stop);
+    signal(SIGINT, stop);
 
-    if (pid == 0) {
-        // Child Process: اجرای FFmpeg
-        execvp(FFMPEG_PATH, ffmpeg_args);
-        // در صورت شکست execvp
-        exit(1);
-    } else if (pid > 0) {
-        // Parent Process: منتظر می‌ماند تا FFmpeg کارش تمام شود
-        int status;
-        waitpid(pid, &status, 0);
+    printf("Content-Type: text/plain\r\n\r\n");
 
-        // 4. بازگرداندن آدرس URL تصویر
-        if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
-            printf(IMAGE_URL);
-            return 0;
-        } else {
-            // در صورت شکست FFmpeg، یک پیام خطا ارسال شود
-            fprintf(stderr, "FFmpeg failed to execute or returned an error.\n");
-            printf("/error.jpg"); // یا یک آدرس فایل خطای ثابت
-            return 1;
-        }
-    } else {
-        // خطا در fork
-        fprintf(stderr, "Fork failed.\n");
+    FILE *pipe = popen(
+        "/mnt/mmcblk0p1/bin/ffmpeg -rtsp_transport tcp -i rtsp://admin:admin@192.168.1.239:554/stream \
+-c:v copy -an -r 3 -f hls -hls_time 0 -hls_list_size 1 -hls_wrap 1 \
+/mnt/mmcblk0p1/www/stream.m3u8",
+        "r");
+
+    if (!pipe)
+    {
+        printf("Failed to start ffmpeg\n");
         return 1;
     }
+
+    while (run)
+    {
+        if (feof(stdout))
+        {
+            break;
+        }
+
+        usleep(500000);
+    }
+
+    system("kill -9 $STREAM_PID");
+
+    unlink("/www/stream.jpg");
+
+    return 0;
 }
