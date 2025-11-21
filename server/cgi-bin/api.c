@@ -9,6 +9,13 @@
 
 #define BASE_PATH "../routes"
 
+void send_401()
+{
+    printf("Status: 401 Unauthorized\r\n");
+    printf("Content-Type: text/plain\r\n\r\n");
+    printf("Unauthorized\n");
+}
+
 void send_404()
 {
     printf("Status: 404 Not Found\r\n");
@@ -23,9 +30,35 @@ void send_500()
     printf("500 Internal Server Error\n");
 }
 
+int autheticate()
+{
+    char *cookie = getenv("HTTP_COOKIE");
+    if (!cookie)
+        return 0;
+
+    char token[128] = {0};
+    char *p = strstr(cookie, "auth_token=");
+    if (!p)
+        return 0;
+
+    sscanf(p, "auth_token=%127s", token);
+
+    FILE *fp = fopen("/tmp/auth_token", "r");
+    if (!fp)
+        return 0;
+
+    char saved[128] = {0};
+    fgets(saved, sizeof(saved), fp);
+    fclose(fp);
+
+    if (strcmp(saved, token) == 0)
+        return 1;
+
+    return 0;
+}
+
 int main(void)
 {
-    // printf("Access-Control-Allow-Origin: *\r\n");
     char *uri = getenv("REQUEST_URI");
     if (!uri)
     {
@@ -33,9 +66,9 @@ int main(void)
         return 1;
     }
 
-    if (strncmp(uri, "/cgi-bin/api", 12) != 0)
+    if (!autheticate() && strcmp(uri, "/cgi-bin/api/login") != 0)
     {
-        send_404();
+        send_401();
         return 1;
     }
 

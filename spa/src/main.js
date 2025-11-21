@@ -37,3 +37,19 @@ app.use(ConfirmationService);
 app.use(PrimeVue, { theme, pt, ripple: true })
 
 app.mount('#app')
+
+
+axios.interceptors.request.use((config) => config);
+
+axios.interceptors.response.use(
+    (res) => {
+        return res;
+    },
+    (err) => {
+        if (err?.response?.status === 401 && location != '/login') {
+            router.push("/login");
+        }
+
+        return err.response || {};
+    }
+);

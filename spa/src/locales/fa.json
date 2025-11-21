@@ -36,7 +36,8 @@
     "medium": "متوسط",
     "high": "زیاد",
     "ultra": "فوق العاده",
-    "iamge-quality":"کیفیت تصویر",
-    "audio-quality":"کیفیت صدا",
-    "off": "خاموش"
+    "iamge-quality": "کیفیت تصویر",
+    "audio-quality": "کیفیت صدا",
+    "off": "خاموش",
+    "error": "خطا"
 }
