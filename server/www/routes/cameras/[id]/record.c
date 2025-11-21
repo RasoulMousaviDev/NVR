@@ -10,15 +10,22 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-int is_recording(char id)
+int get_file_path(char *id, char *file_path)
 {
     char model[32];
     camera_get(id, "model", model);
 
     char *base_path = getenv("BASE_PAHT");
 
-    char file_path[64];
     snprintf(file_path, sizeof(file_path), "%s/tmp/%s-record.pid", base_path, model);
+
+    return 0;
+}
+
+int is_recording(char *id)
+{
+    char file_path[64];
+    get_file_path(id, file_path);
 
     FILE *fp = fopen(file_path, "r");
     pid_t pid;
@@ -31,16 +38,14 @@ int is_recording(char id)
         fclose(fp);
         if (kill(pid, 0) == 0 || errno != ESRCH)
             return pid;
-        else
-            remove(file_path);
     }
 
     fclose(fp);
-    
+
     return 0;
 }
 
-int stop_recording(char id)
+int stop_recording(char *id)
 {
     pid_t pid = is_recording(id);
 
@@ -49,13 +54,18 @@ int stop_recording(char id)
         if (kill(pid, SIGTERM) == 0)
         {
             waitpid(pid, NULL, 0);
+
+            char file_path[64];
+            get_file_path(id, file_path);
+            remove(file_path);
+
             return 0;
         }
     }
     return -1;
 }
 
-int start_recording(char id)
+int start_recording(char *id)
 {
     if (is_recording(id))
         return 0;

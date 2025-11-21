@@ -1,4 +1,7 @@
+
 #include <stdio.h>
+#include <time.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
@@ -40,8 +43,37 @@ int camera_get(const char *id, char *key, char *value)
 
     char query[32];
     snprintf(query, sizeof(query), "%s=%127[^&]", key);
-    
+
     sscanf(camera, query, value);
 
     return 0;
+}
+
+static void log_json(const char *fmt, ...)
+{
+    char *base_path = getenv("BASE_PAHT");
+
+    char log_file[64];
+    snprintf(log_file, sizeof(log_file), "%s/tmp/log.json", base_path);
+
+    FILE *fp = fopen(log_file, "a");
+    if (!fp)
+        return;
+
+    time_t t = time(NULL);
+    struct tm tm;
+    localtime_r(&t, &tm);
+
+    char date[64];
+    strftime(date, sizeof(date), "%Y-%m-%d - %H:%M:%S", &tm);
+
+    char msg[1024];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(msg, sizeof(msg), fmt, args);
+    va_end(args);
+
+    fprintf(fp, "{\"date\":\"%s\",\"message\":\"%s\"}\n", date, msg);
+
+    fclose(fp);
 }

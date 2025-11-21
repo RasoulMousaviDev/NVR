@@ -26,7 +26,7 @@ const items = computed(() => [
 }));
 
 const store = useFileStore()
-store.getMemomry()
+store.getStorage()
 </script>
 
 <template>
@@ -34,11 +34,11 @@ store.getMemomry()
         <div class=" flex flex-col justify-between gap-6 grow">
             <PanelMenu :model="items" />
             <div class="flex flex-col items-center h-max border-t border-gray-100 pt-4 relative">
-                <Knob :model-value="store.memory.used || 0" :max="store.memory.size" ReadOnly :size="200"
-                    :strokeWidth="6" class="ltr" :valueTemplate="`{value} / ${store.memory.size || 0} GB`"
+                <Knob :model-value="store.storage.used || 0" :max="store.storage.size" ReadOnly :size="200"
+                    :strokeWidth="6" class="ltr" :valueTemplate="`{value} / ${store.storage.size || 0} GB`"
                     pt:text="text-[7px] -translate-y-2 font-['arial']" />
                 <Button icon="pi pi-refresh" text rounded severity="secondary" class="absolute! top-36"
-                    :loading="pending" @click="store.getMemomry()" />
+                    :loading="pending" @click="store.getStorage()" />
                 <span class="text-lg">{{ $t('sd-card') }}</span>
             </div>
         </div>

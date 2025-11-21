@@ -12,154 +12,140 @@
 #include <errno.h>
 #include <stdint.h>
 #include <dirent.h>
+#include <sys/statvfs.h>
+#include <limits.h>
 
-#define CHUNK_SIZE 1024
-#define ENC_SUFFIX ".enc"
-#define LOG_FILE "/mnt/mmcblk0p1/monitor_log.txt"
-#define VIDEO_BASE_PATH "/mnt/mmcblk0p1/videos"
+pid_t ffmpeg_pid = 0;
 
-void create_parent_dir(const char *path)
+int check_storage(const char *base_path)
 {
-    char dir_path[256];
-    char *last_slash = strrchr(path, '/');
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "df -k %s | tail -1 | awk '{print int($5)}'", base_path);
 
-    if (last_slash != NULL)
-    {
-        size_t len = last_slash - path;
-        strncpy(dir_path, path, len);
-        dir_path[len] = '\0';
+    FILE *fp = popen(cmd, "r");
+    if (!fp)
+        return -1;
 
-        char mkdir_cmd[300];
-        snprintf(mkdir_cmd, sizeof(mkdir_cmd), "/bin/mkdir -p %s", dir_path);
-        system(mkdir_cmd);
-    }
+    int usage = 0;
+    fscanf(fp, "%d", &usage);
+    pclose(fp);
+
+    if (usage < 90)
+        return 0;
+
+    char videos_dir[64];
+    snprintf(videos_dir, sizeof(videos_dir), "%s/videos", base_path);
+
+    snprintf(cmd, sizeof(cmd),
+             "find %s -type f -name '*.enc' -exec stat -c '%%Y %%n' {} \\; | sort -n | head -1 | cut -d' ' -f2- | xargs -r rm -f",
+             videos_dir);
+
+    return check_storage(base_path);
 }
 
-int aes_encrypt_file(const char *input_path, const char *key_hex)
+int encrypt_file(const char *base_path, char *filename)
 {
-    char output_path[512];
-    char relative_filename[256];
-    const char *filename_ptr;
+    char *key = getenv("AES_KEY");
+    const char *iv = "00000000000000000000000000000000";
+
+    char input_file[512];
+    snprintf(input_file, sizeof(input_file), "%s/tmp/%s", base_path, filename);
+
+    int model, Y, M, D, h, m, s;
+    if (sscanf(filename, "%s-%4d-%2d-%2d-%2d-%2d-%2d", &model, &Y, &M, &D, &h, &m, &s) != 6)
+        return -1;
+
+    char output_idr[512];
+    snprintf(output_idr, sizeof(output_idr), "%s/videos/%s/%04d/%02d/%02d/%02d", base_path, model, Y, M, D, h);
+
+    char mkdir[512];
+    snprintf(mkdir, sizeof(mkdir), "mkdir -p %s", output_idr);
+    system(mkdir);
+
+    char output_file[512];
+    snprintf(output_file, sizeof(output_file), "%s/%2d-%2d.mp4", output_idr, h);
+
     char openssl_cmd[2048];
-    const char *IV_HEX = "00000000000000000000000000000000";
-
-    filename_ptr = strrchr(input_path, '/');
-    if (filename_ptr == NULL)
-        return -1;
-    filename_ptr++;
-    strncpy(relative_filename, filename_ptr, sizeof(relative_filename) - 1);
-
-    int Y, M, D, h, m, s;
-    if (sscanf(relative_filename, "%4d-%2d-%2d-%2d-%2d-%2d", &Y, &M, &D, &h, &m, &s) != 6)
-    {
-        return -1;
-    }
-
-    snprintf(output_path, sizeof(output_path),
-             "%s/%04d/%02d/%02d/%02d/%02d-%02d%s",
-             VIDEO_BASE_PATH, Y, M, D, h, m, s, ENC_SUFFIX);
-
-    create_parent_dir(output_path);
-
     snprintf(openssl_cmd, sizeof(openssl_cmd),
-             "/mnt/mmcblk0p1/bin/openssl enc -aes-256-cbc -e "
-             "-in \"%s\" "
-             "-out \"%s\" "
-             "-K %s "
-             "-iv %s",
-             input_path,
-             output_path,
-             key_hex,
-             IV_HEX);
+             "%s/bin/openssl enc -aes-256-cbc -e -in \"%s\" -out \"%s\" -K %s -iv %s ",
+             base_path, input_file, output_file, key, iv);
 
     int status = system(openssl_cmd);
 
     if (status == 0)
     {
-        remove(input_path);
+        remove(input_file);
+        check_storage(base_path);
         return 0;
     }
     else
     {
-        remove(output_path);
+        remove(output_file);
         return -1;
     }
 }
 
-int process_directory(const char *dir_name, const char *key_hex)
-{
-    DIR *dir;
-    struct dirent *entry;
-    char path[1024];
-
-    if (!(dir = opendir(dir_name)))
-        return -1;
-
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (entry->d_type == DT_REG)
-        {
-            snprintf(path, sizeof(path), "%s/%s", dir_name, entry->d_name);
-            FILE *log = fopen(LOG_FILE, "a");
-            fprintf(log, "Incomplete: %s\n", path);
-            fclose(log);
-            aes_encrypt_file(path, key_hex);
-        }
-    }
-    closedir(dir);
-
-    return 0;
-}
-
-pid_t ffmpeg_pid = 0;
-
-void handle_signal(int sig)
+void stop(int sig)
 {
     if (ffmpeg_pid > 0)
-    {
         kill(ffmpeg_pid, SIGTERM);
-    }
+
     exit(0);
 }
 
 int main(int argc, char *argv[])
 {
     if (argc != 4)
-    {
         return 1;
-    }
 
-    const char *list_file = argv[1];
-    const char *key_hex = argv[2];
-    ffmpeg_pid = atoi(argv[3]);
+    signal(SIGTERM, stop);
+    signal(SIGINT, stop);
 
-    FILE *log = fopen(LOG_FILE, "a");
-    if (log)
-    {
-        fprintf(log, "Monitor started for PID %d\n", ffmpeg_pid);
-        fclose(log);
-    }
+    char *base_path = getenv("BASE_PAHT");
 
-    signal(SIGTERM, handle_signal);
-    signal(SIGINT, handle_signal);
+    char *model = argv[1];
+
+    char segments_path[64];
+    snprintf(segments_path, sizeof(segments_path), "%s/tmp/%s-segments.txt", base_path, model);
+
+    char pid_path[64];
+    snprintf(pid_path, sizeof(pid_path), "%s/tmp/%s-record.pid", base_path, model);
+
+    FILE *fp = fopen(pid_path, "r");
+    if (fp)
+        fscanf(fp, "%d", &ffmpeg_pid);
+
+    // fprintf(log, "Monitor started for PID %d\n", ffmpeg_pid);
 
     long int last_pos = 0;
     while (1)
     {
         if (kill(ffmpeg_pid, 0) == -1 && errno == ESRCH)
         {
-            int result = process_directory(VIDEO_BASE_PATH, key_hex);
+            char temp_dir[64];
+            snprintf(temp_dir, sizeof(temp_dir), "%s/tmp", base_path);
 
-            if (log)
+            DIR *dir;
+            struct dirent *entry;
+
+            if (!(dir = opendir(temp_dir)))
+                return -1;
+
+            while ((entry = readdir(dir)) != NULL)
             {
-                log = fopen(LOG_FILE, "a");
-                fprintf(log, "Killed: %d\n", result);
-                fclose(log);
+                if (entry->d_type == DT_REG)
+                {
+                    // fprintf(log, "Incomplete: %s\n", path);
+                    encrypt_file(base_path, entry->d_name);
+                }
             }
+            closedir(dir);
+
+            // fprintf(log, "Killed: %d\n", result);
             return 0;
         }
 
-        FILE *fp = fopen(list_file, "r");
+        FILE *fp = fopen(segments_path, "r");
         if (fp)
         {
             char filename[256];
@@ -170,17 +156,10 @@ int main(int argc, char *argv[])
             {
                 filename[strcspn(filename, "\n")] = 0;
 
-                snprintf(absolute_path, sizeof(absolute_path), "%s/%s", VIDEO_BASE_PATH, filename);
-
-                if (aes_encrypt_file(absolute_path, key_hex) == 0)
+                if (encrypt_file(base_path, filename) == 0)
                 {
 
-                    if (log)
-                    {
-                        log = fopen(LOG_FILE, "a");
-                        fprintf(log, "Encrypted: %s\n", absolute_path);
-                        fclose(log);
-                    }
+                    // fprintf(log, "Encrypted: %s\n", absolute_path);
                 }
             }
 

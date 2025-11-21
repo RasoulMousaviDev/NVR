@@ -3,7 +3,7 @@ export const useFileStore = defineStore('file', {
         fetching: false,
         scanning: false,
         items: [],
-        memory: { size: 0, used: 0 }
+        storage: { size: 0, used: 0 }
     }),
     actions: {
         async index(direction) {
@@ -18,15 +18,15 @@ export const useFileStore = defineStore('file', {
             if (status === 200)
                 this.items = data
         },
-        async getMemomry() {
+        async getStorage() {
             this.scanning = true
 
-            const { status, data } = await this.axios.post('/files/memory')
+            const { status, data } = await this.axios.post('/files/storage')
 
             this.scanning = false
 
             if (status === 200) {
-                this.memory = data
+                this.storage = data
             }
         }
     }
