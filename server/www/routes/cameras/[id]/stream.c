@@ -1,0 +1,81 @@
+#include "/home/rasoul/Projects/NVR/server/include/utils.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/types.h>
+
+volatile sig_atomic_t run = 1;
+
+void stop(int sig)
+{
+    run = 0;
+}
+
+int main(int argc, char *argv[])
+{
+    char *method = getenv("REQUEST_METHOD");
+    if (!method || strcmp(method, "POST") != 0)
+    {
+        printf("Status: 405 Method Not Allowed\r\n\r\n");
+        return 0;
+    }
+
+    if (argc != 2)
+    {
+        printf("Status: 400 Bad Request\r\n\r\n");
+        return 1;
+    }
+    char *id = argv[1];
+
+    signal(SIGPIPE, stop);
+    signal(SIGTERM, stop);
+    signal(SIGINT, stop);
+
+    char *base_path = getenv("BASE_PAHT");
+
+    char model[32], ip[16], username[16], password[16];
+    camera_get(id, "model", model);
+    camera_get(id, "ip", ip);
+    camera_get(id, "username", username);
+    camera_get(id, "password", password);
+
+    char path[128];
+    snprintf(path, sizeof(path), "%s/www/hls/%s", base_path, model);
+
+    char mkdir_cmd[128];
+    snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", path);
+
+    system(mkdir_cmd);
+
+    char stream_cmd[128];
+    snprintf(stream_cmd, sizeof(stream_cmd),
+             "(%s/bin/ffmpeg -rtsp_transport tcp -i rtsp://%s:%s@%s:%s/stream "
+             "-c:v copy -an -r 3 -f hls -hls_time 0 -hls_list_size 1 -hls_wrap 1 "
+             "%s/stream.m3u8 &) & echo $! > %s/tmp/%s-stream.pid",
+             base_path, username, password, ip, 554, path, base_path, model);
+
+    FILE *pipe = popen(stream_cmd, "r");
+    if (!pipe)
+    {
+        printf("Failed to start ffmpeg\n");
+        return 1;
+    }
+
+    while (run)
+    {
+        if (feof(stdout))
+            break;
+
+        usleep(500000);
+    }
+
+    char kill_cmd[128];
+    snprintf(kill_cmd, sizeof(kill_cmd),
+             "kill -9 $(cat %s/tmp/%s-stream.pid) && rm -r %s/*",
+             base_path, model, path);
+
+    system(kill_cmd);
+
+    return 0;
+}

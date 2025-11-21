@@ -9,6 +9,9 @@ compile_c_files() {
         if [ "$item" == "$OUTPUT_DIR" ]; then
             continue
         fi
+        if [ "$item" == "include" ]; then
+            continue
+        fi
         if [ -d "$item" ]; then
             compile_c_files "$item"
         elif [[ "$item" == *.c ]]; then
@@ -27,4 +30,4 @@ compile_c_files() {
 
 compile_c_files "."
 
-scp -O -r output/* root@192.168.1.100:/mnt/mmcblk0p1/www
+scp -O -r output/* root@192.168.1.100:/mnt/mmcblk0p1
