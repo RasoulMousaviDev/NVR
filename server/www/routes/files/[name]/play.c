@@ -7,7 +7,6 @@
 #define KEY_HEX "2cc4c6c797ead8baf874a4bf14ab04d0c9c2a43d1b629011375fc98f0c1e4ae3"
 #define IV_HEX "00000000000000000000000000000000"
 #define VIDEO_BASE_PATH "/mnt/mmcblk0p1/videos"
-#define MAX_PATH 1024
 
 int main(int argc, char *argv[])
 {
@@ -28,7 +27,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    char year[5], month[3], day[3], hour[3], minute[3], second[3];
+    char *base_path = getenv("BASE_PAHT");
+
+    char model[32], year[5], month[3], day[3], hour[3], minute[3], second[3];
     if (sscanf(argv[1], "%4[0-9]-%2[0-9]-%2[0-9]-%2[0-9]-%2[0-9]-%2[0-9]",
                year, month, day, hour, minute, second) != 6)
     {
@@ -38,24 +39,22 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    char enc_path[MAX_PATH];
-    snprintf(enc_path, MAX_PATH, "%s/%s/%s/%s/%s/%s-%s.enc",
-             VIDEO_BASE_PATH, year, month, day, hour, minute, second);
+    char *key = getenv("AES_KEY");
+    char *iv = "00000000000000000000000000000000";
+
+    char input_path[1024];
+    snprintf(input_path, sizeof(input_path), "%s/%s/%s/%s/%s/%s/%s-%s.enc",
+             base_path, model, year, month, day, hour, minute, second);
 
     char cmd[2048];
     snprintf(cmd, sizeof(cmd),
-             "/mnt/mmcblk0p1/bin/openssl enc -aes-256-cbc -d "
-             "-in \"%s\" "
-             "-out /mnt/mmcblk0p1/www/play.mp4 "
-             "-K %s "
-             "-iv %s",
-             enc_path,
-             KEY_HEX,
-             IV_HEX);
+             "%s/bin/openssl enc -aes-256-cbc -d -in \"%s\" -out %s/www/play.mp4 -K %s -iv %s",
+             base_path, input_path, base_path, key, iv);
 
     system(cmd);
 
     printf("Status: 302 Found\r\n");
     printf("Location: /play.mp4\r\n\r\n");
+    
     return 0;
 }

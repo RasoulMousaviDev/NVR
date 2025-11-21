@@ -4,8 +4,6 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
-#define BASE_PATH "/mnt/mmcblk0p1/videos/"
-
 void sanitize_path(char *path)
 {
     char *p;
@@ -53,11 +51,16 @@ void list_dir(const char *path, char *json, int *first)
 }
 
 int main()
-{
+{  
+    char *base_path = getenv("BASE_PAHT");
+    
+    char videos_path[64];
+    snprintf(videos_path, sizeof(videos_path), "%s/videos/", base_path);
+    
+    char path[1024];
+    strcpy(path, videos_path);
+    
     char *query = getenv("QUERY_STRING");
-    char path_to_list[1024];
-    strcpy(path_to_list, BASE_PATH);
-
     if (query && strlen(query) > 10)
     {
         for (int i = 0; query[i] != '\0'; i++)
@@ -67,16 +70,17 @@ int main()
                 query[i] = '/';
             }
         }
-        strcat(path_to_list, query + 10);
-        strcat(path_to_list, "/");
+        strcat(path, query + 10);
+        strcat(path, "/");
     }
-    printf("Test: %s\r\n", path_to_list);
+
+    printf("Status: 200 OK\r\n");
     printf("Content-Type: application/json\r\n\r\n");
 
     char json[8192];
     strcpy(json, "[");
     int first = 1;
-    list_dir(path_to_list, json, &first);
+    list_dir(path, json, &first);
     strcat(json, "]");
 
     printf("%s\n", json);

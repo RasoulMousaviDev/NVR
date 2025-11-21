@@ -46,7 +46,7 @@ int check_storage(const char *base_path)
 int encrypt_file(const char *base_path, char *filename)
 {
     char *key = getenv("AES_KEY");
-    const char *iv = "00000000000000000000000000000000";
+    char *iv = "00000000000000000000000000000000";
 
     char input_file[512];
     snprintf(input_file, sizeof(input_file), "%s/tmp/%s", base_path, filename);

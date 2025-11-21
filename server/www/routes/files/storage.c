@@ -7,10 +7,10 @@ int main()
     printf("Status: 200 OK\r\n");
     printf("Content-Type: application/json\r\n\r\n");
 
-    const char *path = "/mnt/mmcblk0p1";
+    char *base_path = getenv("BASE_PAHT");
     struct statvfs stat;
 
-    if (statvfs(path, &stat) != 0)
+    if (statvfs(base_path, &stat) != 0)
     {
         printf("{\"error\": \"Error reading disk info\"}\n");
         return 1;
