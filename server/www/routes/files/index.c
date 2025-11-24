@@ -51,15 +51,22 @@ void list_dir(const char *path, char *json, int *first)
 }
 
 int main()
-{  
-    char *base_path = getenv("BASE_PAHT");
+{
+    char *method = getenv("REQUEST_METHOD");
+    if (!method || strcmp(method, "GET") != 0)
+    {
+        printf("Status: 405 Method Not Allowed\r\n\r\n");
+        return 0;
+    }
     
+    char *base_path = getenv("BASE_PATH");
+
     char videos_path[64];
     snprintf(videos_path, sizeof(videos_path), "%s/videos/", base_path);
-    
+
     char path[1024];
     strcpy(path, videos_path);
-    
+
     char *query = getenv("QUERY_STRING");
     if (query && strlen(query) > 10)
     {

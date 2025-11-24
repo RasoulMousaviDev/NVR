@@ -15,7 +15,7 @@ int get_file_path(char *id, char *file_path)
     char model[32];
     camera_get(id, "model", model);
 
-    char *base_path = getenv("BASE_PAHT");
+    char *base_path = getenv("BASE_PATH");
 
     snprintf(file_path, sizeof(file_path), "%s/tmp/%s-record.pid", base_path, model);
 
@@ -70,7 +70,7 @@ int start_recording(char *id)
     if (is_recording(id))
         return 0;
 
-    char *base_path = getenv("BASE_PAHT");
+    char *base_path = getenv("BASE_PATH");
 
     char model[32], ip[16], username[16], password[16], duration[2];
     camera_get(id, "model", model);
@@ -78,6 +78,8 @@ int start_recording(char *id)
     camera_get(id, "username", username);
     camera_get(id, "password", password);
     camera_get(id, "duration", duration);
+
+    logger("Camera(%s) record starting ...", model);
 
     char record_cmd[2048];
     snprintf(record_cmd, sizeof(record_cmd),
@@ -92,13 +94,20 @@ int start_recording(char *id)
              base_path, model, base_path, model, base_path, model);
 
     if (system(record_cmd) == -1)
+    {
+        logger("Camera(%s) record failed", model);
         return -1;
+    }
 
     char encrypt_cmd[2048];
     snprintf(encrypt_cmd, sizeof(encrypt_cmd), "%s/bin/encrypt %s &", base_path, model);
 
     if (system(encrypt_cmd) == -1)
+    {
+        logger("File encrypt run failed");
+        logger("Camera(%s) record failed", model);
         return -1;
+    }
 
     return 0;
 }

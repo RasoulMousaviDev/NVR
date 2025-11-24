@@ -1,3 +1,4 @@
+#include "/home/rasoul/Projects/NVR/server/include/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +41,9 @@ int main(void)
         printf("Status: 401 Unauthorized\r\n");
         printf("Content-Type: application/json\r\n\r\n");
         printf("{\"ok\":false,\"error\":\"invalid credentials\"}\n");
+
+        logger("User login failed");
+
         return 0;
     }
 
@@ -47,18 +51,20 @@ int main(void)
     char token[64];
     generate_token(token, sizeof(token));
 
-    printf("Status: 200 OK\r\n");
-    printf("Content-Type: application/json\r\n");
-    printf("Set-Cookie: auth_token=%s; HttpOnly; Path=/; Max-Age=3600\r\n", token);
-    printf("\r\n");
-    printf("{\"ok\":true}\n", token);
-
     FILE *fp = fopen("/tmp/auth_token", "w");
     if (fp)
     {
         fprintf(fp, "%s", token);
         fclose(fp);
     }
+
+    printf("Status: 200 OK\r\n");
+    printf("Content-Type: application/json\r\n");
+    printf("Set-Cookie: auth_token=%s; HttpOnly; Path=/; Max-Age=3600\r\n", token);
+    printf("\r\n");
+    printf("{\"ok\":true}\n");
+
+    logger("User login success");
 
     return 0;
 }

@@ -14,6 +14,10 @@ void stop(int sig)
 
 int main(int argc, char *argv[])
 {
+    signal(SIGPIPE, stop);
+    signal(SIGTERM, stop);
+    signal(SIGINT, stop);
+
     char *method = getenv("REQUEST_METHOD");
     if (!method || strcmp(method, "POST") != 0)
     {
@@ -26,19 +30,18 @@ int main(int argc, char *argv[])
         printf("Status: 400 Bad Request\r\n\r\n");
         return 1;
     }
+
     char *id = argv[1];
 
-    signal(SIGPIPE, stop);
-    signal(SIGTERM, stop);
-    signal(SIGINT, stop);
-
-    char *base_path = getenv("BASE_PAHT");
+    char *base_path = getenv("BASE_PATH");
 
     char model[32], ip[16], username[16], password[16];
     camera_get(id, "model", model);
     camera_get(id, "ip", ip);
     camera_get(id, "username", username);
     camera_get(id, "password", password);
+
+    logger("Camera (%s) stream starting ...", model);
 
     char path[128];
     snprintf(path, sizeof(path), "%s/www/hls/%s", base_path, model);
@@ -76,6 +79,8 @@ int main(int argc, char *argv[])
              base_path, model, path);
 
     system(kill_cmd);
+
+    logger("Camera (%s) stream stopped", model);
 
     return 0;
 }

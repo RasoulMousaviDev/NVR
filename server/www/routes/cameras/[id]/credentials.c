@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #define _DEFAULT_SOURCE
 
+#include "/home/rasoul/Projects/NVR/server/include/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,13 +13,6 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <string.h>
-
-#define FILE_PATH "cameras.txt"
-#define MAX_BODY 65536
-#define RTSP_PORT 554
-
-#define FFMPG_BIN "/mnt/mmcblk0p1/bin/ffmpeg"
-#define TEMP_OUTPUT_FILE "/tmp/ffmpeg_output.txt"
 
 int find_camera(FILE *fp, const char *id, char *ip)
 {
@@ -53,6 +47,10 @@ int find_camera(FILE *fp, const char *id, char *ip)
 
 int check_credentials(const char *rtspUrl)
 {
+    char *base_path = getenv("BASE_PATH");
+    char temp_file[128];
+    snprintf(temp_file, sizeof(temp_file), "%s/tmp/ffmpeg.txt", base_path);
+
     pid_t pid;
     int status;
     int result = 2;
@@ -67,7 +65,7 @@ int check_credentials(const char *rtspUrl)
     else if (pid == 0)
     {
 
-        int fd = open(TEMP_OUTPUT_FILE, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        int fd = open(temp_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (fd == -1)
         {
             _exit(1);
@@ -85,7 +83,9 @@ int check_credentials(const char *rtspUrl)
             "-",
             NULL};
 
-        execvp(FFMPG_BIN, args);
+        char ffmpeg[128];
+        snprintf(ffmpeg, sizeof(ffmpeg), "%s/bin/ffmpeg", base_path);
+        execvp(ffmpeg, args);
         _exit(1);
     }
 
@@ -96,7 +96,7 @@ int check_credentials(const char *rtspUrl)
             result = 2;
         }
 
-        FILE *fp = fopen(TEMP_OUTPUT_FILE, "r");
+        FILE *fp = fopen(temp_file, "r");
         if (fp != NULL)
         {
             char buffer[256];
@@ -117,20 +117,14 @@ int check_credentials(const char *rtspUrl)
             fclose(fp);
 
             if (unauthorized_found)
-            {
                 result = 1;
-            }
             else if (auth_found && WIFEXITED(status) && WEXITSTATUS(status) == 0)
-            {
                 result = 0;
-            }
             else
-            {
                 result = 2;
-            }
         }
 
-        remove(TEMP_OUTPUT_FILE);
+        remove(temp_file);
 
         return result;
     }
@@ -151,6 +145,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    logger("Camera credentials ...");
+
     char *id = argv[1];
     int content_length = atoi(getenv("CONTENT_LENGTH"));
     char *body = malloc(content_length + 1);
@@ -167,18 +163,10 @@ int main(int argc, char *argv[])
 
     free(body);
 
-    char exe_path[1024];
-    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-    if (len == -1)
-        return 1;
-    exe_path[len] = '\0';
+    char *base_path = getenv("BASE_PATH");
 
-    p = strstr(exe_path, "/[id]/credentials");
-    if (p)
-        *p = '\0';
-
-    char file_path[PATH_MAX];
-    snprintf(file_path, sizeof(file_path), "%s/%s", exe_path, FILE_PATH);
+    char file_path[64];
+    snprintf(file_path, sizeof(file_path), "%s/www/routes/cameras/list.txt", base_path);
 
     FILE *fp = fopen(file_path, "r+");
     if (!fp)
@@ -191,7 +179,7 @@ int main(int argc, char *argv[])
     find_camera(fp, id, ip);
 
     char url[512];
-    sprintf(url, "rtsp://%s:%s@%s:%d/", username, password, ip, RTSP_PORT);
+    sprintf(url, "rtsp://%s:%s@%s:%d/", username, password, ip, 554);
     int result_success = check_credentials(url);
 
     printf("Content-Type: application/json\r\n");
@@ -206,13 +194,16 @@ int main(int argc, char *argv[])
         int status = system(cmd);
         printf("Status: 200 OK\r\n\r\n");
         printf("{\"ok\": true}");
+
+        logger("Camera credentials success");
     }
     else
     {
         printf("Status: 401 Unauthorized\r\n\r\n");
         printf("{\"ok\": false}");
-    }
 
+        logger("Camera credentials failed");
+    }
 
     return 0;
 }

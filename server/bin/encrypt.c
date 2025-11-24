@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #define _DEFAULT_SOURCE
 
+#include "/home/rasoul/Projects/NVR/server/include/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -101,9 +102,11 @@ int main(int argc, char *argv[])
     signal(SIGTERM, stop);
     signal(SIGINT, stop);
 
-    char *base_path = getenv("BASE_PAHT");
+    char *base_path = getenv("BASE_PATH");
 
     char *model = argv[1];
+
+    logger("File encrypt for camera(%s) listening ...", model);
 
     char segments_path[64];
     snprintf(segments_path, sizeof(segments_path), "%s/tmp/%s-segments.txt", base_path, model);
@@ -114,8 +117,6 @@ int main(int argc, char *argv[])
     FILE *fp = fopen(pid_path, "r");
     if (fp)
         fscanf(fp, "%d", &ffmpeg_pid);
-
-    // fprintf(log, "Monitor started for PID %d\n", ffmpeg_pid);
 
     long int last_pos = 0;
     while (1)
@@ -135,13 +136,14 @@ int main(int argc, char *argv[])
             {
                 if (entry->d_type == DT_REG)
                 {
-                    // fprintf(log, "Incomplete: %s\n", path);
+                    logger("Found incompelete recorded: %s", entry->d_type);
+
                     encrypt_file(base_path, entry->d_name);
                 }
             }
             closedir(dir);
 
-            // fprintf(log, "Killed: %d\n", result);
+            logger("Killed ffmpeg recorder for camera(%s)", model);
             return 0;
         }
 
@@ -157,10 +159,7 @@ int main(int argc, char *argv[])
                 filename[strcspn(filename, "\n")] = 0;
 
                 if (encrypt_file(base_path, filename) == 0)
-                {
-
-                    // fprintf(log, "Encrypted: %s\n", absolute_path);
-                }
+                    logger("File encrypted for camera(%s): %s", model, filename);
             }
 
             last_pos = ftell(fp);
@@ -169,5 +168,9 @@ int main(int argc, char *argv[])
 
         sleep(1);
     }
+
+    logger("File encrypt for camera(%s) stopped", model);
+    logger("Camera(%s) record stopped", model);
+
     return 0;
 }

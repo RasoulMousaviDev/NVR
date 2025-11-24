@@ -49,9 +49,9 @@ int camera_get(const char *id, char *key, char *value)
     return 0;
 }
 
-static void log_json(const char *fmt, ...)
+static void logger(const char *fmt, ...)
 {
-    char *base_path = getenv("BASE_PAHT");
+    char *base_path = getenv("BASE_PATH");
 
     char log_file[64];
     snprintf(log_file, sizeof(log_file), "%s/tmp/log.json", base_path);

@@ -1,13 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/statvfs.h>
+#include <string.h>
 
 int main()
 {
+    char *method = getenv("REQUEST_METHOD");
+    if (!method || strcmp(method, "GET") != 0)
+    {
+        printf("Status: 405 Method Not Allowed\r\n\r\n");
+        return 0;
+    }
+    
     printf("Status: 200 OK\r\n");
     printf("Content-Type: application/json\r\n\r\n");
 
-    char *base_path = getenv("BASE_PAHT");
+    char *base_path = getenv("BASE_PATH");
     struct statvfs stat;
 
     if (statvfs(base_path, &stat) != 0)

@@ -1,12 +1,10 @@
+#include "/home/rasoul/Projects/NVR/server/include/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <stdint.h>
-
-#define KEY_HEX "2cc4c6c797ead8baf874a4bf14ab04d0c9c2a43d1b629011375fc98f0c1e4ae3"
-#define IV_HEX "00000000000000000000000000000000"
-#define VIDEO_BASE_PATH "/mnt/mmcblk0p1/videos"
+#include <string.h>
 
 int main(int argc, char *argv[])
 {
@@ -27,7 +25,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    char *base_path = getenv("BASE_PAHT");
+    char *base_path = getenv("BASE_PATH");
 
     char model[32], year[5], month[3], day[3], hour[3], minute[3], second[3];
     if (sscanf(argv[1], "%4[0-9]-%2[0-9]-%2[0-9]-%2[0-9]-%2[0-9]-%2[0-9]",
@@ -46,15 +44,23 @@ int main(int argc, char *argv[])
     snprintf(input_path, sizeof(input_path), "%s/%s/%s/%s/%s/%s/%s-%s.enc",
              base_path, model, year, month, day, hour, minute, second);
 
+    logger("File decrypt(%s) starting ...", input_path);
+
     char cmd[2048];
     snprintf(cmd, sizeof(cmd),
              "%s/bin/openssl enc -aes-256-cbc -d -in \"%s\" -out %s/www/play.mp4 -K %s -iv %s",
              base_path, input_path, base_path, key, iv);
 
-    system(cmd);
+    if (system(cmd) == -1)
+    {
+        logger("File decrypt(%s) failed", input_path);
+        return -1;
+    }
 
     printf("Status: 302 Found\r\n");
     printf("Location: /play.mp4\r\n\r\n");
-    
+
+    logger("File decrypt(%s) success", input_path);
+
     return 0;
 }

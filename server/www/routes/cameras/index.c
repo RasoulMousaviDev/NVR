@@ -8,10 +8,6 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#define MAX_LINE 2048
-#define MAX_KV 128
-#define FILE_PATH "cameras.txt"
-
 void escape_json(const char *src, char *dst)
 {
     while (*src)
@@ -60,18 +56,10 @@ int main()
     printf("Status: 200 OK\r\n");
     printf("Content-Type: application/json\r\n\r\n");
 
-    char exe_path[1024];
-    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-    if (len == -1)
-        return 1;
-    exe_path[len] = '\0';
+    char *base_path = getenv("BASE_PATH");
 
-    char *last_slash = strrchr(exe_path, '/');
-    if (last_slash)
-        *last_slash = '\0';
-
-    char file_path[PATH_MAX];
-    snprintf(file_path, sizeof(file_path), "%s/%s", exe_path, FILE_PATH);
+    char file_path[64];
+    snprintf(file_path, sizeof(file_path), "%s/www/routes/cameras/list.txt", base_path);
 
     const char *ignored_keys[] = {"username", "password", NULL};
 
@@ -80,8 +68,10 @@ int main()
         printf("{\"items\": []}");
         return 1;
     }
-    char line[MAX_LINE];
+
+    char line[2048];
     printf("{\"items\": [");
+
     int first_line = 1;
     while (fgets(line, sizeof(line), fp))
     {
@@ -90,10 +80,10 @@ int main()
             printf(",");
         first_line = 0;
         printf("{");
-        char *kv_list[MAX_KV];
+        char *kv_list[128];
         int kv_count = 0;
         char *token = strtok(line, "&");
-        while (token && kv_count < MAX_KV)
+        while (token && kv_count < 128)
         {
             kv_list[kv_count++] = token;
             token = strtok(NULL, "&");

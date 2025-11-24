@@ -21,7 +21,7 @@ export const useFileStore = defineStore('file', {
         async getStorage() {
             this.scanning = true
 
-            const { status, data } = await this.axios.post('/files/storage')
+            const { status, data } = await this.axios.get('/files/storage')
 
             this.scanning = false
 

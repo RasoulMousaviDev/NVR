@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 #define _DEFAULT_SOURCE
 
+#include "/home/rasoul/Projects/NVR/server/include/utils.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,8 +12,6 @@
 #include <limits.h>
 #include <string.h>
 #include <sys/time.h>
-
-#define FILE_PATH "cameras.txt"
 
 // Send WS-Discovery probe and capture response IP
 void send_ws_discovery(char *buffer, int *size)
@@ -201,143 +200,7 @@ void fetch_onvif(const char *ip, int port, char *man, char *model, char *fw,
     *audio = strstr(xml, "Audio") ? 1 : 0;
 }
 
-// Ensure file exists
-void ensure_file(char *file_path)
-{
-    FILE *fp = fopen(file_path, "a+");
-    fclose(fp);
-}
-
-// Find existing camera by IP
-int find_camera(FILE *fp, const char *ip, long *pos)
-{
-    char line[1024];
-    int id = 1;
-
-    rewind(fp);
-    while (fgets(line, sizeof(line), fp))
-    {
-        char *p = strstr(line, "ip=");
-        if (p && strncmp(p + 3, ip, strlen(ip)) == 0)
-        {
-            *pos = ftell(fp) - strlen(line);
-            return id;
-        }
-        id++;
-    }
-
-    return 0;
-}
-
-// Set connect=0 for all cameras
-void reset_connect_flags(FILE *fp)
-{
-    char buffer[10000] = {0};
-    char line[1024];
-    size_t total = 0;
-
-    rewind(fp);
-
-    while (fgets(line, sizeof(line), fp))
-    {
-        char *p = strstr(line, "connect=");
-        if (p)
-        {
-            char *amp = strchr(p, '&');
-
-            if (amp)
-            {
-                size_t tail_len = strlen(amp);
-                memmove(p + 9, amp, tail_len + 1);
-                memcpy(p, "connect=0", 9);
-            }
-            else
-            {
-                memcpy(p, "connect=0", 9);
-                p[9] = '\0';
-            }
-        }
-
-        strncat(buffer, line, sizeof(buffer) - strlen(buffer) - 1);
-    }
-
-    rewind(fp);
-    ftruncate(fileno(fp), 0);
-    fseek(fp, 0, SEEK_SET);
-
-    fputs(buffer, fp);
-
-    fflush(fp);
-}
-
-// Add new camera
-void write_camera(FILE *fp, int id, const char *ip,
-                  const char *man, const char *model,
-                  const char *fw, const char *sn, const char *hw,
-                  int audio)
-{
-    char line[2048];
-
-    sprintf(line,
-            "id=%d&ip=%s&manufacturer=%s&model=%s&firmware_version=%s&serial_number=%s&hardware_id=%s"
-            "&username=&password=&record=0&audio=%d&image_quality=medium&audio_quality=%s&duration=60"
-            "&connect=1\n",
-            id,
-            ip, man, model, fw, sn, hw, audio,
-            audio ? "medium" : "off");
-
-    fseek(fp, 0, SEEK_END);
-    fputs(line, fp);
-    fflush(fp);
-}
-
-// Update connect=1 for an existing camera
-void update_connect(FILE *fp, long pos)
-{
-    char buffer[10000] = {0};
-    char line[1024];
-    size_t total = 0;
-
-    rewind(fp);
-    long cur = 0;
-
-    while (fgets(line, sizeof(line), fp))
-    {
-        long start = cur;
-        cur = ftell(fp);
-
-        if (start == pos)
-        {
-            char *p = strstr(line, "connect=");
-            if (p)
-            {
-                char *amp = strchr(p, '&');
-
-                if (amp)
-                {
-                    size_t tail_len = strlen(amp);
-                    memmove(p + 9, amp, tail_len + 1);
-                    memcpy(p, "connect=1", 9);
-                }
-                else
-                {
-                    memcpy(p, "connect=1", 9);
-                    p[9] = '\0';
-                }
-            }
-        }
-
-        strncat(buffer, line, sizeof(buffer) - strlen(buffer) - 1);
-    }
-    
-    rewind(fp);
-    ftruncate(fileno(fp), 0);
-    fseek(fp, 0, SEEK_SET);
-    fputs(buffer, fp);
-    fflush(fp);
-}
-
-int main()
+int main(void)
 {
     char *method = getenv("REQUEST_METHOD");
     if (!method || strcmp(method, "POST") != 0)
@@ -346,60 +209,84 @@ int main()
         return 0;
     }
 
-    char exe_path[1024];
-    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-    if (len == -1)
-        return 1;
-    exe_path[len] = '\0';
+    logger("Network scanning ...");
 
-    char *last_slash = strrchr(exe_path, '/');
-    if (last_slash)
-        *last_slash = '\0';
+    char *base_path = getenv("BASE_PATH");
 
-    char file_path[PATH_MAX];
-    snprintf(file_path, sizeof(file_path), "%s/%s", exe_path, FILE_PATH);
+    char file_path[64];
+    snprintf(file_path, sizeof(file_path), "%s/www/routes/cameras/list.txt", base_path);
 
-    ensure_file(file_path);
     FILE *fp = fopen(file_path, "a+");
+    fclose(fp);
 
-    reset_connect_flags(fp);
+    // reset connect flag
+    char reset_cmd[128];
+    snprintf(reset_cmd, sizeof(reset_cmd), "sed -i 's/connect=1/connect=0/g' %s", file_path);
+    system(reset_cmd);
 
     char buffer[4096];
     int size = 5;
 
     strcpy(buffer, "Probe");
-    send_ws_discovery(buffer, &size);
 
+    send_ws_discovery(buffer, &size);
     if (size > 0)
     {
         char ip[64];
         strcpy(ip, buffer + size);
+
         if (check_rtsp(ip))
         {
             char man[64], model[64], fw[64], sn[64], hw[64];
             int audio, port = 8899;
 
+            logger("Found camera (%s)", ip);
+
             fetch_onvif(ip, port, man, model, fw, sn, hw, &audio);
 
-            long pos;
-            int id = find_camera(fp, ip, &pos);
+            int id = 0;
+            char find_cmd[128];
+            snprintf(find_cmd, sizeof(find_cmd), "grep -n \"%s\" %s | cut -d: -f1", ip, file_path);
+
+            FILE *output = popen(find_cmd, "r");
+            if (output == NULL)
+            {
+                printf("Status: 500 Server Error\r\n\r\n");
+                return 1;
+            }
+
+            char buff[64];
+            if (fgets(buff, sizeof(buff), output) != NULL)
+                id = atoi(buff);
 
             if (id)
             {
-                update_connect(fp, pos);
+                char update_cmd[128];
+                snprintf(update_cmd, sizeof(update_cmd), "sed -i '%ds/connect=0/connect=1/' %s", id, file_path);
+                system(update_cmd);
             }
             else
             {
-                id++;
-                write_camera(fp, id, ip, man, model, fw, sn, hw, audio);
+                char camera[512];
+                snprintf(camera, sizeof(camera),
+                         "id=$(($(wc -l < %s)+1))&ip=%s&manufacturer=%s&model=%s&firmware_version=%s&serial_number=%s&hardware_id=%s"
+                         "&username=&password=&record=0&audio=%d&image_quality=medium&audio_quality=%s&duration=60&connect=1",
+                         file_path, ip, man, model, fw, sn, hw, audio, audio ? "medium" : "off");
+
+                char insert_cmd[1024];
+                snprintf(insert_cmd, sizeof(insert_cmd), "echo \"%s\" >> %s", camera, file_path);
+                system(insert_cmd);
             }
+
+            printf("Status: 200 OK\r\n");
+            printf("Content-Type: application/json\r\n\r\n");
+            printf("{\"ok\": true}\n");
+
+            return 0;
         }
     }
 
-    printf("Status: 200 OK\r\n");
-    printf("Content-Type: application/json\r\n\r\n");
-    printf("{\"ok\": true}\n");
+    logger("No cameras found");
 
-    fclose(fp);
     return 0;
 }
