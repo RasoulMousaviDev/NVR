@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     signal(SIGINT, stop);
 
     char *method = getenv("REQUEST_METHOD");
-    if (!method || strcmp(method, "POST") != 0)
+    if (!method || strcmp(method, "GET") != 0)
     {
         printf("Status: 405 Method Not Allowed\r\n\r\n");
         return 0;
@@ -32,28 +32,28 @@ int main(int argc, char *argv[])
     }
 
     char *id = argv[1];
+    printf("Status: 200 OK\r\n\r\n");
 
     char *base_path = getenv("BASE_PATH");
-
-    char model[32], ip[16], username[16], password[16];
+    char model[32], ip[32], username[32], password[32];
     camera_get(id, "model", model);
     camera_get(id, "ip", ip);
     camera_get(id, "username", username);
     camera_get(id, "password", password);
 
-    logger("Camera (%s) stream starting ...", model);
+    logger("Camera(%s) stream starting ...", model);
 
-    char path[128];
+    char path[256];
     snprintf(path, sizeof(path), "%s/www/hls/%s", base_path, model);
 
-    char mkdir_cmd[128];
+    char mkdir_cmd[512];
     snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", path);
 
     system(mkdir_cmd);
 
-    char stream_cmd[128];
+    char stream_cmd[1024];
     snprintf(stream_cmd, sizeof(stream_cmd),
-             "(%s/bin/ffmpeg -rtsp_transport tcp -i rtsp://%s:%s@%s:%s/stream "
+             "(%s/bin/ffmpeg -rtsp_transport tcp -i rtsp://%s:%s@%s:%d/stream "
              "-c:v copy -an -r 3 -f hls -hls_time 0 -hls_list_size 1 -hls_wrap 1 "
              "%s/stream.m3u8 &) & echo $! > %s/tmp/%s-stream.pid",
              base_path, username, password, ip, 554, path, base_path, model);
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 
     system(kill_cmd);
 
-    logger("Camera (%s) stream stopped", model);
+    logger("Camera(%s) stream stopped", model);
 
     return 0;
 }

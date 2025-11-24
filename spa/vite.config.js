@@ -47,6 +47,12 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/cgi-bin\/api/, "/cgi-bin/api"),
+            },
+            "/hls": {
+                target: 'http://192.168.1.100:3000',
+                changeOrigin: true,
+                secure: false,
+                rewrite: (path) => path.replace(/^\/cgi-bin\/api/, "/hls"),
             }
         },
         cors: true

@@ -2,9 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define LOG_FILE "app.log"
-#define PAGE_SIZE 20
-
 int main(void)
 {
     char *method = getenv("REQUEST_METHOD");
@@ -32,12 +29,12 @@ int main(void)
 
     printf("Content-Type: text/plain\r\n\r\n");
 
-    char *base_path = getenv("BASE_PAHT");
+    char *base_path = getenv("BASE_PATH");
 
     char log_file[64];
     snprintf(log_file, sizeof(log_file), "%s/tmp/log.json", base_path);
 
-    FILE *fp = fopen(base_path, "r");
+    FILE *fp = fopen(log_file, "r");
     if (!fp)
     {
         printf("Error: cannot open log file\n");
@@ -57,7 +54,7 @@ int main(void)
         printf("%s", buf);
         lines_sent++;
 
-        if (lines_sent >= PAGE_SIZE)
+        if (lines_sent >= 20)
             break;
     }
 

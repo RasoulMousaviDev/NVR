@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    logger("Camera credentials ...");
+    logger("Camera credentials checking ...");
 
     char *id = argv[1];
     int content_length = atoi(getenv("CONTENT_LENGTH"));
@@ -182,7 +182,6 @@ int main(int argc, char *argv[])
     sprintf(url, "rtsp://%s:%s@%s:%d/", username, password, ip, 554);
     int result_success = check_credentials(url);
 
-    printf("Content-Type: application/json\r\n");
     fclose(fp);
 
     if (result_success == 0)
@@ -192,14 +191,16 @@ int main(int argc, char *argv[])
                  "sed -i '/id=%s/ { s|username=[^&]*|username=%s|g; s|password=[^&]*|password=%s|g; }' %s",
                  id, username, password, file_path);
         int status = system(cmd);
-        printf("Status: 200 OK\r\n\r\n");
+        printf("Status: 200 OK\r\n");
+        printf("Content-Type: application/json\r\n\r\n");
         printf("{\"ok\": true}");
 
         logger("Camera credentials success");
     }
     else
     {
-        printf("Status: 401 Unauthorized\r\n\r\n");
+        printf("Status: 403 Unauthorized\r\n");
+        printf("Content-Type: application/json\r\n\r\n");
         printf("{\"ok\": false}");
 
         logger("Camera credentials failed");

@@ -1,27 +1,39 @@
 <script setup>
+import Hls from 'hls.js'
+
 const dialog = inject('dialogRef')
 
-// const { url } = dialog.value.data
+const { id, model } = dialog.value.data
 
-const img = ref()
+const store = useCameraStore()
 
-const url = ref('http://192.168.1.100:3000/stream.jpg')
+const controller = store.stream(id)
 
-const date = ref()
+let hls;
+onMounted(() => {
+    setTimeout(() => {
+        var video = document.getElementById('video');
 
-let timer;
+        if (Hls.isSupported()) {
+            hls = new Hls();
+            hls.loadSource(`/hls/${model}/stream.m3u8`);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, function () {
+                console.log('HLS Manifest parsed');
+            });
+        }
+    }, 1);
 
-onMounted(() => timer= setInterval(() => {
-    date.value = Date.now()
-}, 300))
-
-onBeforeUnmount(() => clearInterval(timer))
+})
+onBeforeUnmount(() => {
+    controller.abort()
+    hls.destroy()
+})
 </script>
 
 <template>
     <div class="flex flex-col gap-4">
-        {{ url }}
-        <img ref="img" width="1080" height="640" :src="`${url}?${date}`" />
+        <video id="video" width="1080" height="640" autoplay/>
         <div class="flex items-center justify-between">
             <Button :label="$t('back')" severity="secondary" outlined @click="dialog.close()" />
         </div>

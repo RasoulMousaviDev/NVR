@@ -22,11 +22,7 @@ const toggle = (data, event) => {
         },
         {
             label: t('live-stream'), icon: 'pi pi-play-circle', disabled,
-            command: async () => {
-                const url = `/cgi-bin/api/cameras/${data.id}/stream`
-
-                return dialog.open(CameraStream, { props, data: { url } })
-            }
+            command: () => dialog.open(CameraStream, { props, data })
         },
         {
             label: t('settings'), icon: 'pi pi-cog', disabled,
@@ -43,7 +39,7 @@ const toggle = (data, event) => {
 
 const handleRecord = async (camera) => {
 
-    const status  = await store.record(camera.id, camera.record)
+    const status = await store.record(camera.id, camera.record)
 }
 </script>
 

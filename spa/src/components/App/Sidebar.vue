@@ -3,19 +3,19 @@ const { t, route, router } = inject('services')
 
 const items = computed(() => [
     {
-        name: 'videos',
+        name: 'Videos',
         label: t('videos'),
         icon: 'pi pi-video',
         command: function () { router.push('/videos') }
     },
     {
-        name: 'cameras',
+        name: 'Cameras',
         label: t('cameras'),
         icon: 'pi pi-camera',
         command: function () { router.push('/cameras') }
     },
     {
-        name: 'logs',
+        name: 'Logs',
         label: t('logs'),
         icon: 'pi pi-list',
         command: function () { router.push('/logs') }

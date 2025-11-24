@@ -1,16 +1,17 @@
 <script setup>
-let ws;
 const scroll = ref()
-const lines = ref([])
-onMounted(() => {
-    ws = new WebSocket(`ws://${location.host}/api/logs/ws`);
-    let flag = false
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        console.log(data);
-        
-        if (data.lines && data.lines.length > 0) lines.value.push(...data.lines);
 
+const log = useLogStore()
+
+let timer;
+let flag = false;
+let count = 0;
+const getLogs = async (line) => {
+    await log.index(line)
+    timer = setTimeout(() => {
+        getLogs(log.items.length + 1)
+    }, 1000);
+    if (count < log.items.length)
         nextTick(() => {
             scroll.value.scrollTo({
                 top: scroll.value.scrollTop + scroll.value.scrollHeight,
@@ -18,13 +19,12 @@ onMounted(() => {
             })
             flag = true
         })
-    };
-    scroll.value.scrollTo({ top: 1000 })
-});
+    count = log.items.length
+}
 
-onUnmounted(() => {
-    ws?.close(1000, 'Component unmounted');
-});
+onMounted(() => getLogs())
+
+onUnmounted(() => clearTimeout(timer));
 </script>
 
 <template>
@@ -32,9 +32,9 @@ onUnmounted(() => {
         <LogHeader />
         <div ref="scroll" class="shadow-inner rounded-lg bg-gray-950 overflow-y-auto h-[50vh] p-6 ltr">
             <ul class="text-white flex flex-col gap-1 font-['arial']">
-                <li v-for="line in lines" class="flex gap-2">
-                    <span class="text-amber-400 whitespace-nowrap">[{{ line.date }}]</span>
-                    <pre>{{ line.text }}</pre>
+                <li v-for="item in log.items" class="flex gap-2">
+                    <span class="text-amber-400 whitespace-nowrap">[{{ item.date }}]</span>
+                    <pre>{{ item.message }}</pre>
                 </li>
             </ul>
         </div>

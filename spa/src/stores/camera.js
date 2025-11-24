@@ -56,6 +56,15 @@ export const useCameraStore = defineStore('camera', {
 
             return status;
         },
+        stream(id) {
+            const controller = new AbortController();
+
+            this.axios.get(`/cameras/${id}/stream`, {
+                signal: controller.signal
+            })
+
+            return controller;
+        },
     }
 
 })
