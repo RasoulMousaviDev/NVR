@@ -17,17 +17,17 @@ const router = createRouter({
                 {
                     name: "Videos",
                     path: "/videos",
-                    component: import('@/views/Videos.vue')
+                    component: () => import('@/views/Videos.vue')
                 },
                 {
                     name: "Cameras",
                     path: "/cameras",
-                    component: import('@/views/Cameras.vue')
+                    component: () => import('@/views/Cameras.vue')
                 },
                 {
                     name: "Logs",
                     path: "/logs",
-                    component: import('@/views/Logs.vue')
+                    component: () => import('@/views/Logs.vue')
                 }
             ]
         }
