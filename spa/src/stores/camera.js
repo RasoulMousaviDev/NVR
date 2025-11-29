@@ -50,11 +50,11 @@ export const useCameraStore = defineStore('camera', {
         async record(id, value) {
             this.loading = true
 
-            const { status } = await this.axios[value ? 'post' : 'delete'](`/cameras/${id}/record`, {})
+            const res = await this.axios[value ? 'post' : 'delete'](`/cameras/${id}/record`, {})
 
             this.loading = false
 
-            return status;
+            return res;
         },
         stream(id) {
             const controller = new AbortController();

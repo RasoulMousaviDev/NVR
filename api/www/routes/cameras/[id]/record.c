@@ -10,22 +10,35 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-int get_file_path(char *id, char *file_path)
+void camera_update(char *id, char *value)
 {
-    char model[32];
-    camera_get(id, "model", model);
-
     char *base_path = getenv("BASE_PATH");
 
-    snprintf(file_path, sizeof(file_path), "%s/tmp/%s-record.pid", base_path, model);
+    char file_path[64];
+    snprintf(file_path, sizeof(file_path), "%s/www/routes/cameras/list.txt", base_path);
+
+    char update_cmd[1024];
+    snprintf(update_cmd, sizeof(update_cmd),
+             "sed -i '/id=%s/ { s|record=[^&]*|record=%s|g; }' %s",
+             id, value, file_path);
+    system(update_cmd);
+}
+
+int get_file_path(char *id, char *file_path)
+{
 
     return 0;
 }
 
 int is_recording(char *id)
 {
+    char *base_path = getenv("BASE_PATH");
+
+    char model[32];
+    camera_get(id, "model", model, sizeof(model));
+
     char file_path[64];
-    get_file_path(id, file_path);
+    snprintf(file_path, sizeof(file_path), "%s/tmp/%s-record.pid", base_path, model);
 
     FILE *fp = fopen(file_path, "r");
     pid_t pid;
@@ -47,6 +60,8 @@ int is_recording(char *id)
 
 int stop_recording(char *id)
 {
+    camera_update(id, "0");
+
     pid_t pid = is_recording(id);
 
     if (pid > 0)
@@ -55,8 +70,14 @@ int stop_recording(char *id)
         {
             waitpid(pid, NULL, 0);
 
+            char *base_path = getenv("BASE_PATH");
+
+            char model[32];
+            camera_get(id, "model", model, sizeof(model));
+
             char file_path[64];
-            get_file_path(id, file_path);
+            snprintf(file_path, sizeof(file_path), "%s/tmp/%s-record.pid", base_path, model);
+            
             remove(file_path);
 
             return 0;
@@ -72,26 +93,35 @@ int start_recording(char *id)
 
     char *base_path = getenv("BASE_PATH");
 
-    char model[32], ip[16], username[16], password[16], duration[2];
-    camera_get(id, "model", model);
-    camera_get(id, "ip", ip);
-    camera_get(id, "username", username);
-    camera_get(id, "password", password);
-    camera_get(id, "duration", duration);
+    char model[32], ip[16], username[16], password[16], duration[8];
+    camera_get(id, "model", model, sizeof(model));
+    camera_get(id, "ip", ip, sizeof(ip));
+    camera_get(id, "username", username, sizeof(username));
+    camera_get(id, "password", password, sizeof(password));
+    camera_get(id, "duration", duration, sizeof(duration));
+
+    if (strlen(username) == 0)
+    {
+        printf("{\"ok\":false,\"error\":\"Unauthorized\"}");
+        exit(0);
+    }
 
     logger("Camera(%s) record starting ...", model);
 
+    char filename[64];
+    snprintf(filename, sizeof(filename), "%s/tmp/%s-%%Y-%%m-%%d-%%H-%%m-%%S.mp4", base_path, model);
+
     char record_cmd[2048];
     snprintf(record_cmd, sizeof(record_cmd),
-             "(%s/bin/ffmpeg -loglevel error -rtsp_transport tcp -i rtsp://%s:%s@%s:%s/stream "
-             "-c copy -map 0 -f segment -segment_time %s -reset_timestamps 1"
+             "( %s/bin/ffmpeg -loglevel error -rtsp_transport tcp -i rtsp://%s:%s@%s:%d/stream "
+             "-c copy -map 0 -f segment -segment_time %s "
              "-reset_timestamps 1 -strftime 1 -segment_format mp4 -segment_list_type flat "
              "-segment_format_options movflags=+frag_keyframe+empty_moov -segment_list %s/tmp/%s-segments.txt "
-             "%s/tmp/%s-%%Y-%%m-%%d-%%H-%%m-%%S.mp4 >> %s/tmp/%s-log.txt 2>&1 & echo $! > %s/tmp/%s-record.pid ) &",
+             "%s >> %s/tmp/%s-log.txt 2>&1 & echo $! > %s/tmp/%s-record.pid ) &",
              base_path, username, password, ip, 554,
              duration,
              base_path, model,
-             base_path, model, base_path, model, base_path, model);
+             filename, base_path, model, base_path, model);
 
     if (system(record_cmd) == -1)
     {
@@ -99,8 +129,8 @@ int start_recording(char *id)
         return -1;
     }
 
-    char encrypt_cmd[2048];
-    snprintf(encrypt_cmd, sizeof(encrypt_cmd), "%s/bin/encrypt %s &", base_path, model);
+    char encrypt_cmd[512];
+    snprintf(encrypt_cmd, sizeof(encrypt_cmd), "nohup %s/bin/encrypt %s > /dev/null 2>&1 & ", base_path, model);
 
     if (system(encrypt_cmd) == -1)
     {
@@ -108,6 +138,8 @@ int start_recording(char *id)
         logger("Camera(%s) record failed", model);
         return -1;
     }
+
+    camera_update(id, "1");
 
     return 0;
 }
@@ -127,18 +159,18 @@ int main(int argc, char *argv[])
         printf("Status: 200 OK\r\n");
         printf("Content-type: application/json\r\n\r\n");
         if (start_recording(id) == 0)
-            printf("{\"ok\":\"true\",\"action\":\"recording started\"}");
+            printf("{\"ok\":true,\"message\":\"Recording started\"}");
         else
-            printf("{\"ok\":\"false\",\"message\":\"Failed to start recording\"}");
+            printf("{\"ok\":false,\"error\":\"Failed to start recording\"}");
     }
     else if (strcmp(method, "DELETE") == 0)
     {
         printf("Status: 200 OK\r\n");
         printf("Content-type: application/json\r\n\r\n");
         if (stop_recording(id) == 0)
-            printf("{\"ok\":\"true\",\"action\":\"recording stopped\"}");
+            printf("{\"ok\":true,\"message\":\"Recording stopped\"}");
         else
-            printf("{\"ok\":\"false\",\"message\":\"Failed to stop recording or process not found\"}");
+            printf("{\"ok\":false,\"error\":\"Failed to stop recording or process not found\"}");
     }
     else
         printf("Status: 405 Method Not Allowed\r\n\r\n");

@@ -52,19 +52,21 @@ int encrypt_file(const char *base_path, char *filename)
     char input_file[512];
     snprintf(input_file, sizeof(input_file), "%s/tmp/%s", base_path, filename);
 
-    int model, Y, M, D, h, m, s;
-    if (sscanf(filename, "%s-%4d-%2d-%2d-%2d-%2d-%2d", &model, &Y, &M, &D, &h, &m, &s) != 6)
+    char model[64];
+    int Y, M, D, h, m, s;
+    if (sscanf(filename, "%63[^-]-%4d-%2d-%2d-%2d-%2d-%2d", &model, &Y, &M, &D, &h, &m, &s) != 7)
         return -1;
 
-    char output_idr[512];
-    snprintf(output_idr, sizeof(output_idr), "%s/videos/%s/%04d/%02d/%02d/%02d", base_path, model, Y, M, D, h);
+    char output_dir[256];
+    snprintf(output_dir, sizeof(output_dir), "%s/videos/%s/%04d/%02d/%02d/%02d", base_path, model, Y, M, D, h);
 
+    printf("%s\n", output_dir);
     char mkdir[512];
-    snprintf(mkdir, sizeof(mkdir), "mkdir -p %s", output_idr);
+    snprintf(mkdir, sizeof(mkdir), "mkdir -p %s", output_dir);
     system(mkdir);
 
-    char output_file[512];
-    snprintf(output_file, sizeof(output_file), "%s/%2d-%2d.mp4", output_idr, h);
+    char output_file[1024];
+    snprintf(output_file, sizeof(output_file), "%s/%02d-%02d.enc", output_dir, m, s);
 
     char openssl_cmd[2048];
     snprintf(openssl_cmd, sizeof(openssl_cmd),
@@ -96,7 +98,7 @@ void stop(int sig)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 4)
+    if (argc != 2)
         return 1;
 
     signal(SIGTERM, stop);
@@ -108,10 +110,10 @@ int main(int argc, char *argv[])
 
     logger("File encrypt for camera(%s) listening ...", model);
 
-    char segments_path[64];
+    char segments_path[128];
     snprintf(segments_path, sizeof(segments_path), "%s/tmp/%s-segments.txt", base_path, model);
 
-    char pid_path[64];
+    char pid_path[128];
     snprintf(pid_path, sizeof(pid_path), "%s/tmp/%s-record.pid", base_path, model);
 
     FILE *fp = fopen(pid_path, "r");
@@ -157,7 +159,7 @@ int main(int argc, char *argv[])
             while (fgets(filename, sizeof(filename), fp) != NULL)
             {
                 filename[strcspn(filename, "\n")] = 0;
-
+                printf("%s \n", filename);
                 if (encrypt_file(base_path, filename) == 0)
                     logger("File encrypted for camera(%s): %s", model, filename);
             }

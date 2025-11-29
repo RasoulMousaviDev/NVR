@@ -29,7 +29,7 @@
     "logs": "لاگ‌ها",
     "quality": "کیفیت",
     "duration": "مدت زمان",
-    "minute": "دقیقه",
+    "second": "ثانیه",
     "audio": "صدا",
     "save": "ذخیره",
     "low": "کم",
@@ -39,5 +39,6 @@
     "iamge-quality": "کیفیت تصویر",
     "audio-quality": "کیفیت صدا",
     "off": "خاموش",
-    "error": "خطا"
+    "error": "خطا",
+    "success": "موفق"
 }

@@ -39,7 +39,17 @@ const toggle = (data, event) => {
 
 const handleRecord = async (camera) => {
 
-    const status = await store.record(camera.id, camera.record)
+    const { status, data } = await store.record(camera.id, camera.record)
+
+    if (status === 200) {
+        if (data.ok)
+            toast.add({ severity: 'success', summary: 'Success', detail: data.message, life: 3000 })
+        else{
+            camera.record = +!camera.record
+            toast.add({ severity: 'error', summary: 'Error', detail: data.error, life: 3000 })
+        }
+
+    }
 }
 </script>
 

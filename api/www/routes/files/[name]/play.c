@@ -27,13 +27,13 @@ int main(int argc, char *argv[])
 
     char *base_path = getenv("BASE_PATH");
 
-    char model[32], year[5], month[3], day[3], hour[3], minute[3], second[3];
-    if (sscanf(argv[1], "%4[0-9]-%2[0-9]-%2[0-9]-%2[0-9]-%2[0-9]-%2[0-9]",
-               year, month, day, hour, minute, second) != 6)
+    char model[64];
+    int Y, M, D, h, m, s;
+    if (sscanf(argv[1], "%63[^-]-%4d-%2d-%2d-%2d-%2d-%2d", &model, &Y, &M, &D, &h, &m, &s) != 7)
     {
         printf("Status: 400 Bad Request\r\n");
         printf("Content-Type: application/json\r\n\r\n");
-        printf("{\"status\":\"error\"}");
+        printf("{\"status\":\"error %s\"}", argv[1]);
         return 0;
     }
 
@@ -41,14 +41,14 @@ int main(int argc, char *argv[])
     char *iv = "00000000000000000000000000000000";
 
     char input_path[1024];
-    snprintf(input_path, sizeof(input_path), "%s/%s/%s/%s/%s/%s/%s-%s.enc",
-             base_path, model, year, month, day, hour, minute, second);
-
+    snprintf(input_path, sizeof(input_path), "%s/videos/%s/%04d/%02d/%02d/%02d/%02d-%02d.enc",
+             base_path, model, Y, M, D, h, m, s);
+  
     logger("File decrypt(%s) starting ...", input_path);
 
     char cmd[2048];
     snprintf(cmd, sizeof(cmd),
-             "%s/bin/openssl enc -aes-256-cbc -d -in \"%s\" -out %s/www/play.mp4 -K %s -iv %s",
+             "%s/bin/openssl enc -aes-256-cbc -d -in \"%s\" -out %s/www/play.mp4 -K %s -iv %s 2>error_log",
              base_path, input_path, base_path, key, iv);
 
     if (system(cmd) == -1)

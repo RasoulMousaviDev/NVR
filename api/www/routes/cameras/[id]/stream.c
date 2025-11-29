@@ -32,14 +32,21 @@ int main(int argc, char *argv[])
     }
 
     char *id = argv[1];
-    printf("Status: 200 OK\r\n\r\n");
+    printf("Status: 200 OK\r\n");
+    printf("Content-type: application/json\r\n\r\n");
 
     char *base_path = getenv("BASE_PATH");
     char model[32], ip[32], username[32], password[32];
-    camera_get(id, "model", model);
-    camera_get(id, "ip", ip);
-    camera_get(id, "username", username);
-    camera_get(id, "password", password);
+    camera_get(id, "model", model, sizeof(model));
+    camera_get(id, "ip", ip, sizeof(ip));
+    camera_get(id, "username", username, sizeof(username));
+    camera_get(id, "password", password, sizeof(password));
+
+    if (strlen(username) == 0)
+    {
+        printf("{\"ok\":false,\"error\":\"Unauthorized\"}");
+        exit(0);
+    }
 
     logger("Camera(%s) stream starting ...", model);
 
@@ -65,17 +72,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    while (run)
+    char buf[1];
+    while (read(STDIN_FILENO, buf, 1) != 0)
     {
-        if (feof(stdout))
-            break;
-
-        usleep(500000);
     }
 
     char kill_cmd[128];
     snprintf(kill_cmd, sizeof(kill_cmd),
-             "kill -9 $(cat %s/tmp/%s-stream.pid) && rm -r %s/*",
+             "kill -9 $(( $(tr -d '\n' < %s/tmp/%s-stream.pid) && rm -r %s/*",
              base_path, model, path);
 
     system(kill_cmd);

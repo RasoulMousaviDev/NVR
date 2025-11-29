@@ -72,7 +72,7 @@ int main(void)
         return 1;
     }
 
-    char arguments[32];
+    char arguments[64];
     char path[1023];
     snprintf(path, sizeof(path), "%s", BASE_PATH);
 

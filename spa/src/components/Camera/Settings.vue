@@ -49,7 +49,7 @@ const handleClick = async () => {
                 <label>{{ $t('duration') }}</label>
             </FloatLabel>
             <InputGroupAddon>
-                <span>{{ $t('minute') }}</span>
+                <span>{{ $t('second') }}</span>
             </InputGroupAddon>
         </InputGroup>
         <div class="w-90 flex items-center justify-between">

@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <string.h>
 
-int camera_get(const char *id, char *key, char *value)
+int camera_get(const char *id, char *key, char *value, size_t value_size)
 {
     char *base_path = getenv("BASE_PATH");
 
@@ -21,7 +21,8 @@ int camera_get(const char *id, char *key, char *value)
 
     fgets(line, sizeof(line), fp);
     line[strcspn(line, "\n")] = 0;
-    strncpy(value, line, sizeof(line));
+    strncpy(value, line, value_size - 1);
+    value[value_size  - 1] = '\0';
 
     fclose(fp);
 
