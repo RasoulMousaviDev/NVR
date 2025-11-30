@@ -7,41 +7,6 @@
 #include <unistd.h>
 #include <limits.h>
 
-#define FILE_PATH "cameras.txt"
-
-void update_value(char *line, const char *key, const char *value)
-{
-    if (!value || strlen(value) == 0)
-        return;
-    char *p = strstr(line, key);
-    if (!p)
-        return;
-    char *eq = strchr(p, '=');
-    if (!eq)
-        return;
-    eq++;
-    char *amp = strchr(eq, '&');
-    if (!amp)
-        amp = eq + strlen(eq);
-    size_t old_len = amp - eq;
-    size_t new_len = strlen(value);
-
-    if (new_len <= old_len)
-    {
-        memcpy(eq, value, new_len);
-        memmove(eq + new_len, eq + old_len, strlen(eq + old_len) + 1);
-    }
-    else
-    {
-
-        if ((eq - line) + new_len + strlen(amp) + 1 < 1024)
-        {
-            memmove(eq + new_len, amp, strlen(amp) + 1);
-            memcpy(eq, value, new_len);
-        }
-    }
-}
-
 int main(int argc, char *argv[])
 {
     char *method = getenv("REQUEST_METHOD");
@@ -74,60 +39,16 @@ int main(int argc, char *argv[])
         sscanf(p, "duration=%127[^&]", dur);
     free(body);
 
-    char exe_path[1024];
-    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-    if (len == -1)
-        return 1;
-    exe_path[len] = '\0';
+    char *base_path = getenv("BASE_PATH");
 
-    p = strstr(exe_path, "/[id]/settings");
-    if (p)
-        *p = '\0';
+    char file_path[64];
+    snprintf(file_path, sizeof(file_path), "%s/www/routes/cameras/list.txt", base_path);
 
-    char file_path[PATH_MAX];
-    snprintf(file_path, sizeof(file_path), "%s/%s", exe_path, FILE_PATH);
-
-    FILE *f = fopen(file_path, "r+");
-
-    if (!f)
-    {
-        printf("Status: 500 Internal Server Error\r\n\r\n");
-        return 0;
-    }
-
-    char buffer[10000] = {0};
-    char line[1024];
-    long cur_pos = 0;
-
-    rewind(f);
-    while (fgets(line, sizeof(line), f))
-    {
-        long start_pos = cur_pos;
-        cur_pos = ftell(f);
-
-        char copy[1024];
-        strncpy(copy, line, sizeof(copy));
-        char *pid = strstr(copy, "id=");
-        if (pid)
-        {
-            pid += 3;
-            char cid[128];
-            sscanf(pid, "%127[^&]", cid);
-            if (strcmp(cid, id) == 0)
-            {
-                update_value(line, "image_quality", img_q);
-                update_value(line, "audio_quality", aud_q);
-                update_value(line, "duration", dur);
-            }
-        }
-        strncat(buffer, line, sizeof(buffer) - strlen(buffer) - 1);
-    }
-
-    rewind(f);
-    ftruncate(fileno(f), 0);
-    fputs(buffer, f);
-    fflush(f);
-    fclose(f);
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd),
+             "sed -i '/id=%s/ { s|image_quality=[^&]*|image_quality=%s|g; s|audio_quality=[^&]*|audio_quality=%s|g; s|duration=[^&]*|duration=%s|g; }' %s",
+             id, img_q, aud_q, dur, file_path);
+    int status = system(cmd);
 
     printf("Status: 200 OK\r\n");
     printf("Content-Type: application/json\r\n\r\n");

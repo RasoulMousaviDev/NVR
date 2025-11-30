@@ -7,33 +7,30 @@ const { id, model } = dialog.value.data
 
 const store = useCameraStore()
 
-const controller = store.stream(id)
-
 let hls;
-onMounted(() => {
-    setTimeout(() => {
-        var video = document.getElementById('video');
+onMounted(async () => {
+    await store.stream(id, true)
+    var video = document.getElementById('video');
 
-        if (Hls.isSupported()) {
-            hls = new Hls();
-            hls.loadSource(`/hls/${model}/stream.m3u8`);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, function () {
-                console.log('HLS Manifest parsed');
-            });
-        }
-    }, 1);
+    if (Hls.isSupported()) {
+        hls = new Hls();
+        hls.loadSource(`/hls/${model}/stream.m3u8`);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+            console.log('HLS Manifest parsed');
+        });
+    }
 
 })
 onBeforeUnmount(() => {
-    controller.abort()
     hls.destroy()
+    store.stream(id, false)
 })
 </script>
 
 <template>
     <div class="flex flex-col gap-4">
-        <video id="video" width="1080" height="640" autoplay/>
+        <video id="video" width="1080" height="640" autoplay />
         <div class="flex items-center justify-between">
             <Button :label="$t('back')" severity="secondary" outlined @click="dialog.close()" />
         </div>
